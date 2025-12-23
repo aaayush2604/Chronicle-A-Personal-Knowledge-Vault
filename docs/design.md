@@ -46,7 +46,7 @@ The following rules must always hold true:
 
 - Once a thought is acknowledged as saved, it must not be lost
 - The append-only log on disk is the system’s source of truth
-- In-memory state and indexes can always be rebuilt from disk
+- If the in-memory state is deleted at any time, replaying the log must fully reconstruct correct state.
 - The system must be able to recover to a usable state after a crash
 
 ---

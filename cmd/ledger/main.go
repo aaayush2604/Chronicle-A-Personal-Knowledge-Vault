@@ -3,20 +3,37 @@ package main
 import (
 	"bufio"
 	"chronicle/internal/entry"
+	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"sync"
+	"syscall"
 	"time"
 )
 
 var entries []entry.KnowledgeEntry
 var nextID int = 1
+var keywordIndex map[string][]int
+var mu sync.RWMutex
 
 const logFilePath = "data/chronicle.log"
 
 func main() {
-	loadFromLog()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var wg sync.WaitGroup
+
+	replayLog()
+
+	wg.Add(1)
+	go startIndexRebuilder(ctx, &wg)
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
 
 	args := os.Args
 
@@ -32,15 +49,61 @@ func main() {
 		handleAdd(args)
 	case "list":
 		handleList()
+	case "search":
+		handleSearch(args)
 	default:
 		fmt.Println("Unknown command:", command)
 		printUsage()
 	}
+
+	go func() {
+		<-sigCh
+		fmt.Println("Shutting Down.....")
+		cancel()
+	}()
+
+	cancel()
+
+	wg.Wait()
+}
+
+func startIndexRebuilder(ctx context.Context, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+
+		case <-ticker.C:
+			rebuildIndex()
+		}
+	}
+}
+
+func rebuildIndex() {
+	mu.Lock()
+	defer mu.Unlock()
+
+	newIndex := make(map[string][]int)
+
+	for _, e := range entries {
+		words := tokenize(e.Content)
+		for _, w := range words {
+			newIndex[w] = append(newIndex[w], e.ID)
+		}
+	}
+
+	keywordIndex = newIndex
 }
 
 func printUsage() {
 	fmt.Println("Usage: ledger add <text>")
 	fmt.Println("       ledger list")
+	fmt.Println(" 	    ledger search <keyword>")
 }
 
 func handleAdd(args []string) {
@@ -50,6 +113,9 @@ func handleAdd(args []string) {
 	}
 
 	var content string = args[2]
+
+	mu.Lock()
+	defer mu.Unlock()
 
 	e := entry.New(nextID, content)
 	nextID++
@@ -61,10 +127,15 @@ func handleAdd(args []string) {
 
 	entries = append(entries, e)
 
+	indexEntry(e)
+
 	fmt.Println("Saved entry with ID:", e.ID)
 }
 
 func handleList() {
+	mu.RLock()
+	defer mu.RUnlock()
+
 	if len(entries) == 0 {
 		fmt.Println("No entries found.")
 		return
@@ -75,6 +146,33 @@ func handleList() {
 		fmt.Println("Timestamp:", e.Timestamp)
 		fmt.Println("Content:", e.Content)
 		fmt.Println("-----")
+	}
+}
+
+func handleSearch(args []string) {
+	if len(args) < 3 {
+		fmt.Println("Usage: ledger search <word>")
+		return
+	}
+
+	word := strings.ToLower(args[2])
+
+	mu.RLock()
+	defer mu.RUnlock()
+
+	ids, ok := keywordIndex[word]
+	if !ok || len(ids) == 0 {
+		fmt.Println("No entries found for:", word)
+		return
+	}
+
+	for _, id := range ids {
+		if e, ok := getEntryByID(id); ok {
+			fmt.Println("ID:", e.ID)
+			fmt.Println("Time:", e.Timestamp.Format(time.RFC3339))
+			fmt.Println("Content:", e.Content)
+			fmt.Println("-----")
+		}
 	}
 }
 
@@ -102,10 +200,21 @@ func appendToLog(e entry.KnowledgeEntry) error {
 		return err
 	}
 
-	return writer.Flush()
+	if err := writer.Flush(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func loadFromLog() {
+func replayLog() {
+	mu.Lock()
+	defer mu.Unlock()
+
+	entries = nil
+	nextID = 1
+	keywordIndex = make(map[string][]int)
+
 	file, err := os.Open(logFilePath)
 	if err != nil {
 		return
@@ -122,10 +231,33 @@ func loadFromLog() {
 		}
 		entries = append(entries, e)
 
+		indexEntry(e)
+
 		if e.ID >= nextID {
 			nextID = e.ID + 1
 		}
 	}
+}
+
+func indexEntry(e entry.KnowledgeEntry) {
+	words := tokenize(e.Content)
+	for _, w := range words {
+		keywordIndex[w] = append(keywordIndex[w], e.ID)
+	}
+}
+
+func tokenize(text string) []string {
+	text = strings.ToLower(text)
+	return strings.Fields(text)
+}
+
+func getEntryByID(id int) (entry.KnowledgeEntry, bool) {
+	for _, e := range entries {
+		if e.ID == id {
+			return e, true
+		}
+	}
+	return entry.KnowledgeEntry{}, false
 }
 
 func parseLogLine(line string) (entry.KnowledgeEntry, bool) {
