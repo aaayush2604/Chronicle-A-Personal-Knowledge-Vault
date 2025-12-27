@@ -12,7 +12,6 @@ func (r *REPL) handle(input string) bool {
 
 	switch cmd {
 	case "exit", "quit":
-		fmt.Println("GoodBye")
 		return true
 
 	case "help":
@@ -95,10 +94,7 @@ func (r *REPL) handle(input string) bool {
 		results := r.engine.ThisWeek()
 		summary := r.engine.SummaryByType(results)
 
-		fmt.Println("Summary (last 7 days):")
-		for t, count := range summary {
-			fmt.Printf("	%s: %d\n", t, count)
-		}
+		printSummary(summary)
 		return false
 
 	default:

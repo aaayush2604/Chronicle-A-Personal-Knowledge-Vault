@@ -3,15 +3,21 @@ package terminal
 import "fmt"
 
 func printHelp() {
-	fmt.Println("Available commands:")
-	fmt.Println("  note <text>       Add a note")
-	fmt.Println("  idea <text>       Add an idea")
-	fmt.Println("  question <text>   Add a question")
-	fmt.Println("  learning <text>   Add a learning")
-	fmt.Println("  recall <word>     Recall related entries")
-	fmt.Println("  help              Show this help")
-	fmt.Println("  exit | quit       Exit Chronicle")
-	fmt.Println("  today             Review today’s entries")
-	fmt.Println("  this week         Review entries from last 7 days")
-	fmt.Println("  summary           Summary of last week by type")
+	fmt.Println(bold + "Writing" + reset)
+	fmt.Println("  note <text>")
+	fmt.Println("  idea <text>")
+	fmt.Println("  question <text>")
+	fmt.Println("  learning <text>")
+	fmt.Println()
+
+	fmt.Println(bold + "Recall & Review" + reset)
+	fmt.Println("  recall <word>")
+	fmt.Println("  today")
+	fmt.Println("  this week")
+	fmt.Println("  summary")
+	fmt.Println()
+
+	fmt.Println(bold + "Session" + reset)
+	fmt.Println("  help")
+	fmt.Println("  exit | quit")
 }

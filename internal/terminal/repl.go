@@ -18,6 +18,8 @@ func New(engine *engine.Engine) *REPL {
 }
 
 func (r *REPL) Start() {
+	clearScreen()
+	printBanner()
 	scanner := bufio.NewScanner(os.Stdin)
 
 	fmt.Println("Chronicle -- Personal Knowledge Vault")
@@ -38,6 +40,7 @@ func (r *REPL) Start() {
 		}
 
 		if r.handle(line) {
+			fmt.Println("GooBye...")
 			return
 		}
 	}

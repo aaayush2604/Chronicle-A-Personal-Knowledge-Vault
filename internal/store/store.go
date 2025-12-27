@@ -25,11 +25,12 @@ func New(logPath string) (*Store, error) {
 	return s, nil
 }
 
-func (s *Store) Add(content string) (entry.KnowledgeEntry, error) {
+func (s *Store) Add(content string, t entry.EntryType) (entry.KnowledgeEntry, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	e := entry.New(s.nextID, content)
+	e.Type = t
 	s.nextID++
 
 	if err := s.append(e); err != nil {
