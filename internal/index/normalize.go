@@ -10,8 +10,10 @@ func normalize(text string) string {
 
 	var b strings.Builder
 	for _, r := range text {
-		if unicode.IsLetter(r) || unicode.IsNumber(r) || r == ' ' {
+		if unicode.IsLetter(r) || unicode.IsNumber(r) {
 			b.WriteRune(r)
+		} else {
+			b.WriteRune(' ')
 		}
 	}
 

@@ -99,6 +99,9 @@ func (r *REPL) handle(input string) bool {
 	case "version":
 		fmt.Println("Chronicle v" + r.version)
 		return false
+	case "index":
+		r.engine.PrintIndex()
+		return false
 	default:
 		fmt.Println("Unknown command. Type `help`.")
 		return false

@@ -18,3 +18,7 @@ func New(store *store.Store, index *index.Index) *Engine {
 		index: index,
 	}
 }
+
+func (e *Engine) PrintIndex() {
+	e.index.PrintIndex()
+}
