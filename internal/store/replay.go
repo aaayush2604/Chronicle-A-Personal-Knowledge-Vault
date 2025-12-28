@@ -2,6 +2,7 @@ package store
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -18,12 +19,18 @@ func (s *Store) replay() error {
 
 	defer file.Close()
 
+	var warnings int
+	lineNo := 0
+
 	scanner := bufio.NewScanner(file)
 
 	for scanner.Scan() {
+		lineNo++
 		line := scanner.Text()
-		e, ok := parseLine(line)
-		if !ok {
+
+		e, err := parseLine(line)
+		if err != nil {
+			warnings++
 			continue
 		}
 
@@ -33,20 +40,26 @@ func (s *Store) replay() error {
 		}
 	}
 
+	fmt.Printf(
+		"Loaded %d entries\n⚠ %d entries could not be read and were skipped\n\n",
+		lineNo-warnings,
+		warnings,
+	)
+
 	return scanner.Err()
 }
 
-func parseLine(line string) (entry.KnowledgeEntry, bool) {
+func parseLine(line string) (entry.KnowledgeEntry, error) {
 	parts := strings.Split(line, "|")
 	if len(parts) != 5 {
-		return entry.KnowledgeEntry{}, false
+		return entry.KnowledgeEntry{}, fmt.Errorf("invalid field count")
 	}
 
 	version, _ := strconv.Atoi(parts[0])
 	id, _ := strconv.Atoi(parts[1])
 	ts, err := time.Parse(entry.TimeFormat, parts[2])
 	if err != nil {
-		return entry.KnowledgeEntry{}, false
+		return entry.KnowledgeEntry{}, fmt.Errorf("invalid time format ")
 	}
 
 	return entry.KnowledgeEntry{
@@ -55,5 +68,5 @@ func parseLine(line string) (entry.KnowledgeEntry, bool) {
 		Timestamp: ts,
 		Type:      entry.EntryType(parts[3]),
 		Content:   parts[4],
-	}, true
+	}, nil
 }

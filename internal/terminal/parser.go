@@ -15,7 +15,7 @@ func (r *REPL) handle(input string) bool {
 		return true
 
 	case "help":
-		printHelp()
+		printHelp(r.version)
 		return false
 
 	case "note", "idea", "question", "learning":
@@ -96,7 +96,9 @@ func (r *REPL) handle(input string) bool {
 
 		printSummary(summary)
 		return false
-
+	case "version":
+		fmt.Println("Chronicle v" + r.version)
+		return false
 	default:
 		fmt.Println("Unknown command. Type `help`.")
 		return false

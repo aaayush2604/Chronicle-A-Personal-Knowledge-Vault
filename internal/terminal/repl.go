@@ -6,20 +6,32 @@ import (
 	"os"
 	"strings"
 
+	"chronicle/internal/config"
 	"chronicle/internal/engine"
 )
 
 type REPL struct {
-	engine *engine.Engine
+	engine  *engine.Engine
+	config  config.Config
+	version string
 }
 
-func New(engine *engine.Engine) *REPL {
-	return &REPL{engine: engine}
+func New(engine *engine.Engine, cfg config.Config, version string) *REPL {
+	return &REPL{
+		engine:  engine,
+		config:  cfg,
+		version: version,
+	}
 }
 
 func (r *REPL) Start() {
 	clearScreen()
-	printBanner()
+	if r.config.ShowBanner {
+		printBanner(r.version)
+	}
+
+	pageSize = r.config.PageSize
+
 	scanner := bufio.NewScanner(os.Stdin)
 
 	fmt.Println("Chronicle -- Personal Knowledge Vault")

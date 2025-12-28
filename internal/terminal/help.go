@@ -2,7 +2,10 @@ package terminal
 
 import "fmt"
 
-func printHelp() {
+func printHelp(version string) {
+	fmt.Println(dim + "Chronicle v" + version + reset)
+	fmt.Println()
+
 	fmt.Println(bold + "Writing" + reset)
 	fmt.Println("  note <text>")
 	fmt.Println("  idea <text>")

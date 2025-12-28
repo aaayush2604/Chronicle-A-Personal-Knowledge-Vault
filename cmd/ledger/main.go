@@ -286,8 +286,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
+	"chronicle/internal/config"
 	"chronicle/internal/engine"
 	"chronicle/internal/index"
 	"chronicle/internal/store"
@@ -295,7 +297,13 @@ import (
 )
 
 func main() {
-	store, err := store.New("data/chronicle.log")
+	logPath, err := config.LogPath()
+	fmt.Println("Log Stored in: ", logPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	store, err := store.New(logPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -303,6 +311,11 @@ func main() {
 	index := index.New()
 	engine := engine.New(store, index)
 
-	repl := terminal.New(engine)
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	repl := terminal.New(engine, cfg, config.Version)
 	repl.Start()
 }

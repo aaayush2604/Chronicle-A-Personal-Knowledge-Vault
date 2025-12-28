@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-const pageSize = 10
+var pageSize int
 
 func pause() {
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
