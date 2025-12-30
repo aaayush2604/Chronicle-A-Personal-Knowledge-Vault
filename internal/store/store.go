@@ -3,11 +3,17 @@ package store
 import (
 	"chronicle/internal/entry"
 	"sync"
+	"time"
 )
+
+type DeletionInfo struct {
+	Timestamp time.Time
+}
 
 type Store struct {
 	mu      sync.RWMutex
 	entries []entry.KnowledgeEntry
+	deleted map[int]DeletionInfo
 	nextID  int
 	logPath string
 }
@@ -16,6 +22,7 @@ func New(logPath string) (*Store, error) {
 	s := &Store{
 		logPath: logPath,
 		nextID:  1,
+		deleted: make(map[int]DeletionInfo),
 	}
 
 	if err := s.replay(); err != nil {
@@ -45,7 +52,12 @@ func (s *Store) List() []entry.KnowledgeEntry {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	out := make([]entry.KnowledgeEntry, len(s.entries))
-	copy(out, s.entries)
+	var out []entry.KnowledgeEntry
+	for _, e := range s.entries {
+		if _, deleted := s.deleted[e.ID]; deleted {
+			continue
+		}
+		out = append(out, e)
+	}
 	return out
 }

@@ -3,12 +3,25 @@ package terminal
 import (
 	"chronicle/internal/entry"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
 func (r *REPL) handle(input string) bool {
 	parts := strings.Fields(input)
 	cmd := strings.ToLower(parts[0])
+
+	var commandAliases = map[string]string{
+		"n":   "note",
+		"i":   "idea",
+		"q":   "question",
+		"l":   "learning",
+		"imp": "important",
+	}
+
+	if full, ok := commandAliases[cmd]; ok {
+		cmd = full
+	}
 
 	switch cmd {
 	case "exit", "quit":
@@ -18,7 +31,7 @@ func (r *REPL) handle(input string) bool {
 		printHelp(r.version)
 		return false
 
-	case "note", "idea", "question", "learning":
+	case "note", "idea", "question", "learning", "important":
 		if len(parts) < 2 {
 			fmt.Printf("Usage: %s <text>\n", cmd)
 			return false
@@ -36,6 +49,8 @@ func (r *REPL) handle(input string) bool {
 			t = entry.TypeQuestion
 		case "learning":
 			t = entry.TypeLearning
+		case "important":
+			t = entry.TypeImportant
 		}
 
 		e, err := r.engine.AddNote(content, t)
@@ -70,7 +85,19 @@ func (r *REPL) handle(input string) bool {
 			return false
 		}
 
-		results := r.engine.Recall(parts[1])
+		if id, err := strconv.Atoi(parts[1]); err == nil {
+
+			if deleted, ts := r.engine.CheckDelete(id); deleted {
+				fmt.Printf(
+					"Entry [%d] was deleted by user on %s\n",
+					id,
+					ts.Timestamp.Format("02 Jan 2006 15:04"),
+				)
+				return false
+			}
+		}
+		var searchTerm string = strings.ToLower(parts[1])
+		results := r.engine.Recall(searchTerm)
 		if len(results) == 0 {
 			fmt.Println("No results")
 			return false
@@ -101,6 +128,26 @@ func (r *REPL) handle(input string) bool {
 		return false
 	case "index":
 		r.engine.PrintIndex()
+		return false
+	case "del":
+		if len(parts) != 2 {
+			fmt.Println("Usage: del <id>")
+			return false
+		}
+
+		id, err := strconv.Atoi(parts[1])
+		if err != nil {
+			fmt.Println("Invalid id")
+			return false
+		}
+
+		if err := r.engine.Delete(id); err != nil {
+			fmt.Println("Error:", err)
+		}
+
+		return false
+	case "clear":
+		clearScreen()
 		return false
 	default:
 		fmt.Println("Unknown command. Type `help`.")

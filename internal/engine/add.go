@@ -12,3 +12,7 @@ func (e *Engine) AddNote(content string, t entry.EntryType) (entry.KnowledgeEntr
 
 	return ke, nil
 }
+
+func (e *Engine) Delete(id int) error {
+	return e.store.Delete(id)
+}

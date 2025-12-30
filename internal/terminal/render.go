@@ -38,6 +38,8 @@ func colorForType(t entry.EntryType) string {
 		return fgBlue
 	case entry.TypeLearning:
 		return fgGreen
+	case entry.TypeImportant:
+		return fgRed
 	default:
 		return fgWhite
 	}

@@ -22,3 +22,10 @@ func New(store *store.Store, index *index.Index) *Engine {
 func (e *Engine) PrintIndex() {
 	e.index.PrintIndex()
 }
+
+func (e *Engine) CheckDelete(id int) (bool, store.DeletionInfo) {
+	if deleted, ts := e.store.CheckDelete(id); deleted {
+		return deleted, ts
+	}
+	return false, store.DeletionInfo{}
+}

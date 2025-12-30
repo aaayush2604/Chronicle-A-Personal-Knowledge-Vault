@@ -13,4 +13,5 @@ const (
 	fgYellow = "\033[33m"
 	fgBlue   = "\033[34m"
 	fgGreen  = "\033[32m"
+	fgRed    = "\033[31m"
 )

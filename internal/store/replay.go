@@ -28,6 +28,16 @@ func (s *Store) replay() error {
 		lineNo++
 		line := scanner.Text()
 
+		parts := strings.Split(line, "|")
+
+		// DELETE record
+		if len(parts) == 4 && parts[3] == "DEL" {
+			id, _ := strconv.Atoi(parts[1])
+			ts, _ := time.Parse(entry.TimeFormat, parts[2])
+			s.deleted[id] = DeletionInfo{Timestamp: ts}
+			continue
+		}
+
 		e, err := parseLine(line)
 		if err != nil {
 			warnings++
@@ -51,6 +61,7 @@ func (s *Store) replay() error {
 
 func parseLine(line string) (entry.KnowledgeEntry, error) {
 	parts := strings.Split(line, "|")
+
 	if len(parts) != 5 {
 		return entry.KnowledgeEntry{}, fmt.Errorf("invalid field count")
 	}
