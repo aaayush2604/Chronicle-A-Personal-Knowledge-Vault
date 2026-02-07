@@ -16,6 +16,18 @@ func (e *Engine) ThisWeek() []entry.KnowledgeEntry {
 	return filterByDate(e.store.List(), start)
 }
 
+func (e *Engine) ThisMonth() []entry.KnowledgeEntry {
+	now := time.Now()
+	start := now.AddDate(0, -1, 0)
+	return filterByDate(e.store.List(), start)
+}
+
+func (e *Engine) ThisYear() []entry.KnowledgeEntry {
+	now := time.Now()
+	start := now.AddDate(-1, 0, 0)
+	return filterByDate(e.store.List(), start)
+}
+
 func filterByDate(entries []entry.KnowledgeEntry, from time.Time) []entry.KnowledgeEntry {
 	out := make([]entry.KnowledgeEntry, 0)
 	for _, e := range entries {

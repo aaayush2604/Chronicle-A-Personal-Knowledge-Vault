@@ -16,10 +16,10 @@ func printEntries(entries []entry.KnowledgeEntry) {
 		// fmt.Printf("[%d] (%s) %s\n", e.ID, e.Type, e.Content)
 
 		fmt.Printf(
-			"%s[%d]%s (%s) %s%s%s\n\n",
+			"%s{%d}%s %s%s%s (%s)  [%s] \n\n",
 			fgGray, e.ID, reset,
-			e.Type,
 			colorForType(e.Type), e.Content, reset,
+			e.Type, e.Timestamp.Format("3:04 PM 02-01-2006"),
 		)
 
 		count++

@@ -14,6 +14,6 @@ func printBanner(version string) {
 	fmt.Println()
 }
 
-func prompt() string {
-	return fgCyan + "chronicle > " + reset
+func prompt() {
+	fmt.Print(fgCyan + "chronicle > " + reset)
 }

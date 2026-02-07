@@ -21,6 +21,7 @@ func printSummary(summary map[entry.EntryType]int) {
 		entry.TypeQuestion,
 		entry.TypeLearning,
 		entry.TypeNote,
+		entry.TypeImportant,
 	}
 
 	for _, t := range order {

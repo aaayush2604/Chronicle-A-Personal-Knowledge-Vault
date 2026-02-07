@@ -39,7 +39,7 @@ func (r *REPL) Start() {
 	fmt.Println()
 
 	for {
-		fmt.Print("> ")
+		prompt()
 
 		if !scanner.Scan() {
 			fmt.Println("\nExiting Chronicle")

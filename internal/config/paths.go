@@ -13,6 +13,7 @@ func DataDir() (string, error) {
 	}
 
 	dir := filepath.Join(home, ".chronicle")
+
 	return dir, nil
 }
 
@@ -30,10 +31,11 @@ func EnsureDataDir() (string, error) {
 }
 
 func LogPath() (string, error) {
-	dir, err := EnsureDataDir()
-	if err != nil {
-		return "", err
-	}
+	// dir, err := EnsureDataDir()
+	// if err != nil {
+	// 	return "", err
+	// }
 
-	return filepath.Join(dir, "chronicle.log"), nil
+	// return filepath.Join(dir, "chronicle.log"), nil
+	return "D:\\Nayi Shuruaat\\Chronicle\\data\\chronicle.log", nil
 }

@@ -91,7 +91,7 @@ func (r *REPL) handle(input string) bool {
 				fmt.Printf(
 					"Entry [%d] was deleted by user on %s\n",
 					id,
-					ts.Timestamp.Format("02 Jan 2006 15:04"),
+					ts.Timestamp.Format("3:04 PM 02-01-2006"),
 				)
 				return false
 			}
@@ -109,6 +109,16 @@ func (r *REPL) handle(input string) bool {
 
 	case "today":
 		results := r.engine.Today()
+		printEntries(results)
+		return false
+
+	case "month":
+		results := r.engine.ThisMonth()
+		printEntries(results)
+		return false
+
+	case "year":
+		results := r.engine.ThisYear()
 		printEntries(results)
 		return false
 
