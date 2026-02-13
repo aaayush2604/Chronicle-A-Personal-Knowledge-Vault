@@ -1,4 +1,4 @@
-﻿# Chronicle-A-Personal-Knowledge-Vault
+﻿# Chronicle-A-Personal-Knowledge-Vault (In Progress)
 
 ## Purpose
 
