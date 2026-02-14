@@ -31,11 +31,15 @@ func EnsureDataDir() (string, error) {
 }
 
 func LogPath() (string, error) {
-	// dir, err := EnsureDataDir()
-	// if err != nil {
-	// 	return "", err
-	// }
+	dir, err := EnsureDataDir()
+	if err != nil {
+		return "", err
+	}
 
 	// return filepath.Join(dir, "chronicle.log"), nil
-	return "D:\\Nayi Shuruaat\\Chronicle\\data\\chronicle.log", nil
+	AbsoluteLogFilePath, ok := os.LookupEnv("CHRONICLE_LOG_FILE_PATH")
+	if !ok || AbsoluteLogFilePath==""{
+		return dir,nil
+	}
+	return AbsoluteLogFilePath, nil
 }
