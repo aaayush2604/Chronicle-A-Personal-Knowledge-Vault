@@ -36,10 +36,10 @@ func LogPath() (string, error) {
 		return "", err
 	}
 
-	// return filepath.Join(dir, "chronicle.log"), nil
+	logFilePath := filepath.Join(dir, "chronicle.log")
 	AbsoluteLogFilePath, ok := os.LookupEnv("CHRONICLE_LOG_FILE_PATH")
-	if !ok || AbsoluteLogFilePath==""{
-		return dir,nil
+	if !ok || AbsoluteLogFilePath == "" {
+		return logFilePath, nil
 	}
 	return AbsoluteLogFilePath, nil
 }

@@ -29,6 +29,7 @@ func (r *REPL) handle(input string) bool {
 
 	case "help":
 		printHelp(r.version)
+
 		return false
 
 	case "note", "idea", "question", "learning", "important":
@@ -130,9 +131,9 @@ func (r *REPL) handle(input string) bool {
 	case "summary":
 		results := r.engine.ThisWeek()
 		summary := r.engine.SummaryByType(results)
-
 		printSummary(summary)
 		return false
+
 	case "version":
 		fmt.Println("Chronicle v" + r.version)
 		return false
