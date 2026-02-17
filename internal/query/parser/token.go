@@ -9,7 +9,7 @@ type Token struct {
 	Position  int
 }
 
-func New(tType TokenType, lex string, lit any, pos int) *Token {
+func NewToken(tType TokenType, lex string, lit any, pos int) *Token {
 	return &Token{
 		TokenType: tType,
 		Lexeme:    lex,
