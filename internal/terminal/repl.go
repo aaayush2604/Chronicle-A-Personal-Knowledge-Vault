@@ -1,13 +1,14 @@
 package terminal
 
 import (
-	"bufio"
+	// "bufio"
 	"fmt"
-	"os"
+	// "os"
 	"strings"
 
 	"chronicle/internal/config"
 	"chronicle/internal/engine"
+	"github.com/chzyer/readline"
 )
 
 type REPL struct {
@@ -32,28 +33,55 @@ func (r *REPL) Start() {
 
 	pageSize = r.config.PageSize
 
-	scanner := bufio.NewScanner(os.Stdin)
+	// scanner := bufio.NewScanner(os.Stdin)
 
 	fmt.Println("Chronicle -- Personal Knowledge Vault")
 	fmt.Println("Type `help` to see available commands")
 	fmt.Println()
 
-	for {
-		prompt()
+	// for {
+	// 	prompt()
 
-		if !scanner.Scan() {
+	// 	if !scanner.Scan() {
+	// 		fmt.Println("\nExiting Chronicle")
+	// 		return
+	// 	}
+
+	// 	line := strings.TrimSpace(scanner.Text())
+	// 	if line == "" {
+	// 		continue
+	// 	}
+
+	// 	if r.handle(line) {
+	// 		fmt.Println("GooBye...")
+	// 		return
+	// 	}
+	// }
+
+	rl, err := readline.NewEx(&readline.Config{
+		Prompt: fgCyan + "chronicle > " + reset,
+	})
+	if err != nil {
+		panic(err)
+	}
+	defer rl.Close()
+
+	for {
+		line, err := rl.Readline()
+		if err != nil {
 			fmt.Println("\nExiting Chronicle")
 			return
 		}
 
-		line := strings.TrimSpace(scanner.Text())
+		line = strings.TrimSpace(line)
 		if line == "" {
 			continue
 		}
 
 		if r.handle(line) {
-			fmt.Println("GooBye...")
+			fmt.Println("GoodBye...")
 			return
 		}
 	}
+
 }
