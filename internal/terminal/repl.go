@@ -1,9 +1,7 @@
 package terminal
 
 import (
-	// "bufio"
 	"fmt"
-	// "os"
 	"strings"
 
 	"chronicle/internal/config"
@@ -33,30 +31,11 @@ func (r *REPL) Start() {
 
 	pageSize = r.config.PageSize
 
-	// scanner := bufio.NewScanner(os.Stdin)
 
 	fmt.Println("Chronicle -- Personal Knowledge Vault")
 	fmt.Println("Type `help` to see available commands")
 	fmt.Println()
 
-	// for {
-	// 	prompt()
-
-	// 	if !scanner.Scan() {
-	// 		fmt.Println("\nExiting Chronicle")
-	// 		return
-	// 	}
-
-	// 	line := strings.TrimSpace(scanner.Text())
-	// 	if line == "" {
-	// 		continue
-	// 	}
-
-	// 	if r.handle(line) {
-	// 		fmt.Println("GooBye...")
-	// 		return
-	// 	}
-	// }
 
 	rl, err := readline.NewEx(&readline.Config{
 		Prompt: fgCyan + "chronicle > " + reset,
