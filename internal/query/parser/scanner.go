@@ -1,8 +1,8 @@
 package query
 
 import (
-	"unicode/utf8"
 	"chronicle/internal/errorC"
+	"fmt"
 )
 
 type Scanner struct {
@@ -30,47 +30,96 @@ func (s *Scanner) ScanTokens() []*Token {
 }
 
 func (s *Scanner) isAtEnd() bool {
-	if s.current>=utf8.RuneCountInString(s.source)
+	return s.current >= len(s.source)
 }
 
-func (s *Scanner) addToken(type TokenType){
-	addToken(type,nil)
+func (s *Scanner) addToken(tType TokenType) {
+	s.addTokenLiteral(tType, nil)
 }
 
-func (s *Scanner) addToken(type TokenType, literal any){
-	text:=s.source[start,current]
-	s.tokens=append(s.tokens,NewToken(type,text,literal,start))
+func (s *Scanner) addTokenLiteral(tType TokenType, literal any) {
+	text := s.source[s.start:s.current]
+	s.tokens = append(s.tokens, NewToken(tType, text, literal, s.start))
 }
 
-func (s *Scanner) advance() rune {
+func (s *Scanner) advance() byte {
 	s.current++
 	return s.source[s.current-1]
 }
 
-func (s *Scanner) match(expected rune) bool {
-	if s.isAtEnd() return false
-	if s.source[s.current]==expected return false
-
+func (s *Scanner) match(expected byte) bool {
+	if s.isAtEnd() {
+		return false
+	}
+	if s.source[s.current] == expected {
+		return false
+	}
 	s.current++
 	return true
 }
 
-func (s *Scanner) scanToken(){
-	c:=s.advance()
+func (s *Scanner) peek() byte {
+	if s.isAtEnd() {
+		return 0
+	}
+	return s.source[s.current]
+}
+
+func (s *Scanner) peekNext() byte {
+	if s.current+1 >= len(s.source) {
+		return 0
+	}
+	return s.source[s.current+1]
+}
+
+func (s *Scanner) scanToken() {
+	c := s.advance()
 	switch c {
 	case '[':
 		s.addToken(LBRACKET)
-		break
 	case ']':
 		s.addToken(RBRACKET)
-		break
 	case ',':
 		s.addToken(COMMA)
-		break
+	case '<':
+		if s.match('=') {
+			s.addTokenLiteral(OPERATOR, "<=")
+		} else {
+			s.addTokenLiteral(OPERATOR, "<")
+		}
+	case '>':
+		if s.match('=') {
+			s.addTokenLiteral(OPERATOR, ">=")
+		} else {
+			s.addTokenLiteral(OPERATOR, ">")
+		}
+	case '!':
+		if s.match('!') {
+			s.addTokenLiteral(OPERATOR, "!=")
+		} else {
+			err := errorC.New(errorC.NotFound, "Unexpected Character")
+			fmt.Println(err.Error())
+		}
+	case '/':
+		if s.match('*') {
+			for !(s.peek() == '*' && s.peekNext() == '/') && !s.isAtEnd() {
+				s.advance()
+			}
+
+			if s.isAtEnd() {
+				err := errorC.New(errorC.NotFound, "Unterminated comment")
+				fmt.Println(err.Error())
+				return
+			}
+
+			s.advance()
+			s.advance()
+		} else {
+			err := errorC.New(errorC.NotFound, "Unterminated comment")
+			fmt.Println(err.Error())
+		}
 	default:
-		err:=errorC.New(NotFound, "Unexpected Charchter")
+		err := errorC.New(errorC.NotFound, "Unexpected Character")
 		fmt.Println(err.Error())
-		break
 	}
 }
-
