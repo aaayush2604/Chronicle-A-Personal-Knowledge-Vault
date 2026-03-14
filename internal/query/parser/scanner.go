@@ -1,4 +1,4 @@
-package query
+package parser
 
 import (
 	"chronicle/internal/errorC"
@@ -139,6 +139,10 @@ func (s *Scanner) scanToken() {
 		s.addToken(LBRACKET)
 	case ']':
 		s.addToken(RBRACKET)
+	case '(':
+		s.addToken(LPAREN)
+	case ')':
+		s.addToken(RPAREN)
 	case ',':
 		s.addToken(COMMA)
 	case '<':

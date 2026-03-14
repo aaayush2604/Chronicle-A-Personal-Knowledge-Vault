@@ -1,4 +1,4 @@
-package query
+package parser
 
 type TokenType string
 
@@ -12,6 +12,8 @@ const (
 	TIME       TokenType = "time"
 	LBRACKET   TokenType = "left_bracket"
 	RBRACKET   TokenType = "right_bracket"
+	LPAREN     TokenType = "left_parenthesis"
+	RPAREN     TokenType = "right_parenthesis"
 	COMMA      TokenType = "comma"
 	STRING     TokenType = "string"
 	NUMBER     TokenType = "number"

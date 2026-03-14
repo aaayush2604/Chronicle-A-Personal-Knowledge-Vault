@@ -1,4 +1,4 @@
-package query
+package parser
 
 var keywords = map[string]TokenType{
 	"AND":    LOGICAL,
