@@ -41,6 +41,7 @@ func (s *Scanner) addToken(tType TokenType) {
 
 func (s *Scanner) addTokenLiteral(tType TokenType, literal any) {
 	text := s.source[s.start:s.current]
+	text = strings.ToLower(text)
 	s.tokens = append(s.tokens, NewToken(tType, text, literal, s.start))
 }
 

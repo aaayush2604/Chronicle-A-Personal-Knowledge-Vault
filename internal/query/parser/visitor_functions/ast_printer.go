@@ -60,6 +60,10 @@ func (p *ASTPrinter) VisitTypeFilterExpression(expr *parser.TypeFilter) any {
 	return builder.String()
 }
 
+func (p *ASTPrinter) VisitLiteralExpression(expr *parser.Literal) any {
+	return fmt.Sprintf("%v", expr.Val)
+}
+
 // func (p *ASTPrinter) PrintPreOrder(name string, exprs ...parser.Expr) string {
 // 	var builder strings.Builder
 
