@@ -26,7 +26,7 @@ func (e *Error) Unwrap() error {
 	return e.Err
 }
 
-func (e *Error) Wrap(err error, kind Kind, msg string) *Error {
+func Wrap(err error, kind Kind, msg string) *Error {
 	return &Error{
 		Kind:    kind,
 		Message: msg,

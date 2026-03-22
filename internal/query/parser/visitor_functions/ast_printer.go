@@ -1,12 +1,18 @@
 package visitor
 
 import (
-	"chronicle/internal/query/parser"
+	parser "chronicle/internal/query/parser"
 	"fmt"
 	"strings"
 )
 
 type ASTPrinter struct{}
+
+func PrintAST(q *parser.Query) {
+	printer := &ASTPrinter{}
+	fmt.Println(q.Command)
+	fmt.Println(q.Expr.Accept(printer).(string))
+}
 
 func (p *ASTPrinter) VisitLogicalExpression(expr *parser.Logical) any {
 	var builder strings.Builder
@@ -22,7 +28,7 @@ func (p *ASTPrinter) VisitLogicalExpression(expr *parser.Logical) any {
 
 func (p *ASTPrinter) VisitComparisonExpression(expr *parser.Comparison) any {
 	return fmt.Sprintf("(%s %s %v)",
-		expr.Field,
+		expr.Field.Lexeme,
 		expr.Operator.Lexeme,
 		expr.Value,
 	)
@@ -63,17 +69,3 @@ func (p *ASTPrinter) VisitTypeFilterExpression(expr *parser.TypeFilter) any {
 func (p *ASTPrinter) VisitLiteralExpression(expr *parser.Literal) any {
 	return fmt.Sprintf("%v", expr.Val)
 }
-
-// func (p *ASTPrinter) PrintPreOrder(name string, exprs ...parser.Expr) string {
-// 	var builder strings.Builder
-
-// 	builder.WriteString("(")
-// 	builder.WriteString(name)
-
-// 	for _, expr := range exprs {
-// 		builder.WriteString(" ")
-// 		builder.WriteString(expr.Accept(p).(string))
-// 	}
-// 	builder.WriteString(")")
-// 	return builder.String()
-// }

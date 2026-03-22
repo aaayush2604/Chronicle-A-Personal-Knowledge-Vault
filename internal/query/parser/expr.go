@@ -27,11 +27,11 @@ type Query struct {
 
 type Logical struct {
 	Left     Expr
-	Operator Token
+	Operator *Token
 	Right    Expr
 }
 
-func NewLogical(left Expr, Op Token, right Expr) *Logical {
+func NewLogical(left Expr, Op *Token, right Expr) *Logical {
 	return &Logical{
 		Left:     left,
 		Operator: Op,
@@ -46,12 +46,12 @@ func (l *Logical) Accept(v ExprVisitor) any {
 }
 
 type Comparison struct {
-	Field    string
-	Operator Token
+	Field    *Token
+	Operator *Token
 	Value    Literal
 }
 
-func NewComparison(field string, Op Token, v Literal) *Comparison {
+func NewComparison(field *Token, Op *Token, v Literal) *Comparison {
 	return &Comparison{
 		Field:    field,
 		Operator: Op,

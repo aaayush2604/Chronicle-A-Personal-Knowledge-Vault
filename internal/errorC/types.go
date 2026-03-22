@@ -6,4 +6,5 @@ const (
 	Validation Kind = "validation"
 	NotFound   Kind = "not_found"
 	Internal   Kind = "internal"
+	Syntax     Kind = "syntax"
 )
