@@ -2,15 +2,16 @@ package parser
 
 import (
 	"chronicle/internal/errorC"
+	lexer "chronicle/internal/query/lexer"
 	"fmt"
 )
 
 type Parser struct {
-	Tokens  []*Token
+	Tokens  []*lexer.Token
 	Current int
 }
 
-func NewParser(tokens []*Token) *Parser {
+func NewParser(tokens []*lexer.Token) *Parser {
 	return &Parser{
 		Tokens:  tokens,
 		Current: 0,
@@ -27,7 +28,7 @@ func (p *Parser) matchLexeme(lexemes ...string) bool {
 	return false
 }
 
-func (p *Parser) checkTokenType(tTypes ...TokenType) bool {
+func (p *Parser) checkTokenType(tTypes ...lexer.TokenType) bool {
 	for _, tType := range tTypes {
 		if p.peek().TokenType == tType {
 			return true
@@ -43,7 +44,7 @@ func (p *Parser) check(lexeme string) bool {
 	return p.peek().Lexeme == lexeme
 }
 
-func (p *Parser) advance() *Token {
+func (p *Parser) advance() *lexer.Token {
 	if !p.isAtEnd() {
 		p.Current++
 	}
@@ -51,14 +52,14 @@ func (p *Parser) advance() *Token {
 }
 
 func (p *Parser) isAtEnd() bool {
-	return p.peek().TokenType == EOF
+	return p.peek().TokenType == lexer.EOF
 }
 
-func (p *Parser) peek() *Token {
+func (p *Parser) peek() *lexer.Token {
 	return p.Tokens[p.Current]
 }
 
-func (p *Parser) previous() *Token {
+func (p *Parser) previous() *lexer.Token {
 	return p.Tokens[p.Current-1]
 }
 
@@ -146,13 +147,13 @@ func (p *Parser) parseTerm() (Expr, error) {
 }
 
 func (p *Parser) parseFactor() (Expr, error) {
-	if p.checkTokenType(LPAREN) {
+	if p.checkTokenType(lexer.LPAREN) {
 		expr, err := p.parseGrouping()
 		if err != nil {
 			return nil, errorC.Wrap(err, errorC.Syntax, "Error parsing Grouping:")
 		}
 		return expr, nil
-	} else if p.checkTokenType(IDENTIFIER) {
+	} else if p.checkTokenType(lexer.IDENTIFIER) {
 		if p.matchLexeme("contains") {
 			expr, err := p.parseContains()
 			if err != nil {
@@ -194,7 +195,7 @@ func (p *Parser) parseGrouping() (Expr, error) {
 
 func (p *Parser) parseContains() (Expr, error) {
 
-	if !(p.checkTokenType(LBRACKET) && p.matchLexeme("[")) {
+	if !(p.checkTokenType(lexer.LBRACKET) && p.matchLexeme("[")) {
 		return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Error parsing Contains StringList [ at col %d", p.peek().Position))
 	}
 
@@ -204,7 +205,7 @@ func (p *Parser) parseContains() (Expr, error) {
 	}
 	expr := NewContains(strings)
 
-	if !(p.checkTokenType(RBRACKET) && p.matchLexeme("]")) {
+	if !(p.checkTokenType(lexer.RBRACKET) && p.matchLexeme("]")) {
 		return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Error parsing Contains StringList ] at col %d", p.peek().Position))
 	}
 
@@ -213,7 +214,7 @@ func (p *Parser) parseContains() (Expr, error) {
 
 func (p *Parser) parseTypeFilter() (Expr, error) {
 
-	if !(p.checkTokenType(LBRACKET) && p.matchLexeme("[")) {
+	if !(p.checkTokenType(lexer.LBRACKET) && p.matchLexeme("[")) {
 		return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Error parsing TypeFilter StringList [ at col %d", p.peek().Position))
 	}
 
@@ -223,7 +224,7 @@ func (p *Parser) parseTypeFilter() (Expr, error) {
 	}
 	expr := NewTypeFilter(strings)
 
-	if !(p.checkTokenType(RBRACKET) && p.matchLexeme("]")) {
+	if !(p.checkTokenType(lexer.RBRACKET) && p.matchLexeme("]")) {
 		return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Error parsing TypeFilter StringList ] at col %d", p.peek().Position))
 	}
 
@@ -232,16 +233,16 @@ func (p *Parser) parseTypeFilter() (Expr, error) {
 
 func (p *Parser) parseStringList() ([]string, error) {
 	var words []string
-	if !p.checkTokenType(STRING) {
+	if !p.checkTokenType(lexer.STRING) {
 		return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Expected a String at col %d", p.peek().Position))
 	}
 
 	words = append(words, p.peek().Literal.(string))
 	p.advance()
 
-	for p.checkTokenType(COMMA) {
+	for p.checkTokenType(lexer.COMMA) {
 		p.advance()
-		if !p.checkTokenType(STRING) {
+		if !p.checkTokenType(lexer.STRING) {
 			return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Expected a String or ] at col %d", p.peek().Position))
 		}
 		words = append(words, p.peek().Literal.(string))
@@ -251,19 +252,19 @@ func (p *Parser) parseStringList() ([]string, error) {
 }
 
 func (p *Parser) parseComparison() (Expr, error) {
-	if !p.checkTokenType(IDENTIFIER) {
+	if !p.checkTokenType(lexer.IDENTIFIER) {
 		return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Expected an Identifier at col: %d", p.peek().Position))
 	}
 	field := p.peek()
 	p.advance()
 
-	if !p.checkTokenType(OPERATOR) {
+	if !p.checkTokenType(lexer.OPERATOR) {
 		return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Expected an Operator at col: %d", p.peek().Position))
 	}
 	opToken := p.peek()
 	p.advance()
 
-	if !p.checkTokenType(STRING, NUMBER) {
+	if !p.checkTokenType(lexer.STRING, lexer.NUMBER) {
 		return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Expected a Literal(Number or String) at col: %d", p.peek().Position))
 	}
 	literal := *NewLiteral(p.peek().Literal)

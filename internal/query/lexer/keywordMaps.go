@@ -1,4 +1,4 @@
-package parser
+package lexer
 
 var keywords = map[string]TokenType{
 	"AND":    LOGICAL,
