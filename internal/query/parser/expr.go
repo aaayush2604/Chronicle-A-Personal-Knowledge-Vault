@@ -52,10 +52,10 @@ func (l *Logical) Accept(v ExprVisitor) any {
 type Comparison struct {
 	Field    *lexer.Token
 	Operator *lexer.Token
-	Value    Literal
+	Value    *Literal
 }
 
-func NewComparison(field *lexer.Token, Op *lexer.Token, v Literal) *Comparison {
+func NewComparison(field *lexer.Token, Op *lexer.Token, v *Literal) *Comparison {
 	return &Comparison{
 		Field:    field,
 		Operator: Op,
@@ -118,10 +118,10 @@ func (g *Grouping) Accept(v ExprVisitor) any {
 }
 
 type Literal struct {
-	Val interface{}
+	Val *lexer.Token
 }
 
-func NewLiteral(val any) *Literal {
+func NewLiteral(val *lexer.Token) *Literal {
 	return &Literal{
 		Val: val,
 	}

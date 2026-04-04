@@ -1,6 +1,9 @@
 package errorC
 
-import "errors"
+import (
+	"errors"
+	"strings"
+)
 
 type Error struct {
 	Kind    Kind
@@ -40,4 +43,27 @@ func GetKind(err error) Kind {
 		return e.Kind
 	}
 	return Internal
+}
+
+func FormatError(err error) string {
+	if err == nil {
+		return ""
+	}
+
+	var lines []string
+	current := err
+	indent := 0
+
+	for current != nil {
+		if e, ok := current.(*Error); ok {
+			lines = append(lines, strings.Repeat("\t", indent)+e.Message)
+			current = e.Unwrap()
+		} else {
+			lines = append(lines, strings.Repeat("\t", indent)+current.Error())
+			break
+		}
+		indent++
+	}
+
+	return strings.Join(lines, "\n")
 }

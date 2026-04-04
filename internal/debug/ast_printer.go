@@ -30,7 +30,7 @@ func (p *ASTPrinter) VisitComparisonExpression(expr *parser.Comparison) any {
 	return fmt.Sprintf("(%s %s %v)",
 		expr.Field.Lexeme,
 		expr.Operator.Lexeme,
-		expr.Value,
+		expr.Value.Val.Lexeme,
 	)
 }
 
@@ -67,5 +67,5 @@ func (p *ASTPrinter) VisitTypeFilterExpression(expr *parser.TypeFilter) any {
 }
 
 func (p *ASTPrinter) VisitLiteralExpression(expr *parser.Literal) any {
-	return fmt.Sprintf("%v", expr.Val)
+	return fmt.Sprintf("%v", expr.Val.Lexeme)
 }

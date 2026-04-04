@@ -64,22 +64,22 @@ func (p *Parser) previous() *lexer.Token {
 }
 
 // of no use yet, since only one expression tree is allowed
-func (p *Parser) synchronize() {
-	p.advance()
+// func (p *Parser) synchronize() {
+// 	p.advance()
 
-	for !p.isAtEnd() {
-		if p.check("recall") {
-			return
-		}
+// 	for !p.isAtEnd() {
+// 		if p.check("recall") {
+// 			return
+// 		}
 
-		if p.check("AND") || p.check("OR") {
-			p.advance()
-			return
-		}
+// 		if p.check("and") || p.check("or") {
+// 			p.advance()
+// 			return
+// 		}
 
-		p.advance()
-	}
-}
+// 		p.advance()
+// 	}
+// }
 
 func (p *Parser) Parse() (*Query, error) {
 	q, err := p.parseQuery()
@@ -232,6 +232,10 @@ func (p *Parser) parseTypeFilter() (Expr, error) {
 }
 
 func (p *Parser) parseStringList() ([]string, error) {
+	if p.checkTokenType(lexer.RBRACKET) {
+		return []string{}, nil
+	}
+
 	var words []string
 	if !p.checkTokenType(lexer.STRING) {
 		return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Expected a String at col %d", p.peek().Position))
@@ -267,7 +271,7 @@ func (p *Parser) parseComparison() (Expr, error) {
 	if !p.checkTokenType(lexer.STRING, lexer.NUMBER) {
 		return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Expected a Literal(Number or String) at col: %d", p.peek().Position))
 	}
-	literal := *NewLiteral(p.peek().Literal)
+	literal := NewLiteral(p.peek())
 	p.advance()
 
 	return NewComparison(field, opToken, literal), nil
