@@ -70,6 +70,8 @@ func (e *Evaluator) VisitComparisonExpression(expr *parser.Comparison) any {
 		return recordVal.(int) >= queryVal.(int)
 	case "<=":
 		return recordVal.(int) <= queryVal.(int)
+	case "!=":
+		return recordVal.(int) != queryVal.(int)
 	}
 
 	return false
