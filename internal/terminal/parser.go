@@ -86,23 +86,25 @@ func (r *REPL) handle(input string) bool {
 			return false
 		}
 
-		if id, err := strconv.Atoi(parts[1]); err == nil {
+		// if id, err := strconv.Atoi(parts[1]); err == nil {
 
-			if deleted, ts := r.engine.CheckDelete(id); deleted {
-				fmt.Printf(
-					"Entry [%d] was deleted by user on %s\n",
-					id,
-					ts.Timestamp.Format("3:04 PM 02-01-2006"),
-				)
-				return false
-			}
-		}
-		var searchTerm string = strings.ToLower(parts[1])
-		results := r.engine.Recall(searchTerm)
-		if len(results) == 0 {
-			fmt.Println("No results")
-			return false
-		}
+		// 	if deleted, ts := r.engine.CheckDelete(id); deleted {
+		// 		fmt.Printf(
+		// 			"Entry [%d] was deleted by user on %s\n",
+		// 			id,
+		// 			ts.Timestamp.Format("3:04 PM 02-01-2006"),
+		// 		)
+		// 		return false
+		// 	}
+		// }
+		// var searchTerm string = strings.ToLower(parts[1])
+		// results := r.engine.Recall(searchTerm)
+		// if len(results) == 0 {
+		// 	fmt.Println("No results")
+		// 	return false
+		// }
+
+		results := r.engine.Query(input)
 
 		printEntries(results)
 
