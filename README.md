@@ -39,5 +39,5 @@ recall date >= "2026-04-01" AND contains ["project"]
 ```
 
 Formats
-Time: "7 PM", "07:30 PM", "19:30"
+Time: "7 PM", "07:30 PM", "19:30", "11:00"
 Date: "2026-04-10", "10/04/2026"
