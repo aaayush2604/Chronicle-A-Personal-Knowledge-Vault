@@ -29,17 +29,3 @@ func EnsureDataDir() (string, error) {
 
 	return dir, nil
 }
-
-func LogPath() (string, error) {
-	dir, err := EnsureDataDir()
-	if err != nil {
-		return "", err
-	}
-
-	logFilePath := filepath.Join(dir, "chronicle.log")
-	AbsoluteLogFilePath, ok := os.LookupEnv("CHRONICLE_LOG_FILE_PATH")
-	if !ok || AbsoluteLogFilePath == "" {
-		return logFilePath, nil
-	}
-	return AbsoluteLogFilePath, nil
-}

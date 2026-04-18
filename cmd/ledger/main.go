@@ -3,25 +3,33 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 
 	"chronicle/internal/config"
 	"chronicle/internal/engine"
 	"chronicle/internal/index"
 	"chronicle/internal/store"
 	"chronicle/internal/terminal"
-	"github.com/joho/godotenv"
 )
 
 func main() {
-	if err:=godotenv.Load(); err != nil{
-		log.Println("No .env file found, using OS environment")
-	}
-
-	logPath, err := config.LogPath()
+	logPath, err := config.SelectLogPath()
 	fmt.Println("Log Stored in: ", logPath)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	dir := filepath.Dir(logPath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		log.Fatal(err)
+	}
+
+	file, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
 
 	store, err := store.New(logPath)
 	if err != nil {
