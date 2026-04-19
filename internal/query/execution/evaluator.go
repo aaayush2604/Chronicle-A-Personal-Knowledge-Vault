@@ -134,6 +134,10 @@ func (e *Evaluator) VisitLiteralExpression(expr *parser.Literal) any {
 	return nil
 }
 
+func (e *Evaluator) VisitAllExpression(expr *parser.All) any {
+	return true
+}
+
 func adjustDate(rVal *any, qVal *any) {
 	t := (*rVal).(time.Time)
 	q := (*qVal).(string)

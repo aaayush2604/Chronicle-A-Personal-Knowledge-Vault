@@ -97,6 +97,17 @@ func (p *Parser) parseQuery() (*Query, error) {
 		return nil, err
 	}
 
+	expr, ok := p.parseAll()
+	if ok {
+		if !p.isAtEnd() {
+			return nil, errorC.New(errorC.Syntax, "There should be no input after ALL")
+		}
+		return &Query{
+			Command: RecallCommand,
+			Expr:    expr,
+		}, nil
+	}
+
 	expr, err := p.parseExpression()
 
 	if err != nil {
@@ -108,6 +119,13 @@ func (p *Parser) parseQuery() (*Query, error) {
 		Command: RecallCommand,
 		Expr:    expr,
 	}, nil
+}
+
+func (p *Parser) parseAll() (Expr, bool) {
+	if p.matchLexeme("all") {
+		return &All{}, true
+	}
+	return nil, false
 }
 
 func (p *Parser) parseExpression() (Expr, error) {
