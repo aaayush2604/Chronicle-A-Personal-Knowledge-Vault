@@ -132,3 +132,7 @@ func (s *SemanticAnalyzer) VisitGroupingExpression(expr *parser.Grouping) any {
 func (s *SemanticAnalyzer) VisitLiteralExpression(expr *parser.Literal) any {
 	return nil
 }
+
+func (s *SemanticAnalyzer) VisitAllExpression(expr *parser.All) any {
+	return nil
+}

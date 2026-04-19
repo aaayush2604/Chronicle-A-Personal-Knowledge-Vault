@@ -69,3 +69,7 @@ func (p *ASTPrinter) VisitTypeFilterExpression(expr *parser.TypeFilter) any {
 func (p *ASTPrinter) VisitLiteralExpression(expr *parser.Literal) any {
 	return fmt.Sprintf("%v", expr.Val.Lexeme)
 }
+
+func (p *ASTPrinter) VisitAllExpression(expr *parser.All) any {
+	return "ALL"
+}

@@ -2,6 +2,7 @@ package terminal
 
 import (
 	"chronicle/internal/entry"
+	"chronicle/internal/errorC"
 	"fmt"
 	"strconv"
 	"strings"
@@ -86,8 +87,10 @@ func (r *REPL) handle(input string) bool {
 			return false
 		}
 
-		results := r.engine.Query(input)
-
+		results, err := r.engine.Query(input)
+		if err != nil {
+			fmt.Println(errorC.FormatError(err))
+		}
 		printEntries(results)
 
 		return false

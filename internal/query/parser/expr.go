@@ -17,6 +17,7 @@ type ExprVisitor interface {
 	VisitTypeFilterExpression(*TypeFilter) any
 	VisitGroupingExpression(*Grouping) any
 	VisitLiteralExpression(*Literal) any
+	VisitAllExpression(*All) any
 }
 
 type Expr interface {
@@ -131,4 +132,12 @@ func (l *Literal) exprNode() {}
 
 func (l *Literal) Accept(v ExprVisitor) any {
 	return v.VisitLiteralExpression(l)
+}
+
+type All struct{}
+
+func (a *All) exprNode() {}
+
+func (a *All) Accept(v ExprVisitor) any {
+	return v.VisitAllExpression(a)
 }

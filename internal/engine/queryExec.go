@@ -7,7 +7,6 @@ import (
 	"chronicle/internal/query/lexer"
 	"chronicle/internal/query/parser"
 	"chronicle/internal/query/semantic"
-	"fmt"
 )
 
 func entryToRecord(e entry.KnowledgeEntry) queryExec.Record {
@@ -19,10 +18,8 @@ func entryToRecord(e entry.KnowledgeEntry) queryExec.Record {
 	}
 }
 
-func (e *Engine) Query(input string) []entry.KnowledgeEntry {
-	entries := e.store.List()
+func (e *Engine) Query(input string) ([]entry.KnowledgeEntry, error) {
 	var res []entry.KnowledgeEntry
-
 	scanner := lexer.NewScanner(input)
 
 	tokens := scanner.ScanTokens()
@@ -31,22 +28,34 @@ func (e *Engine) Query(input string) []entry.KnowledgeEntry {
 
 	q, err := p.Parse()
 	if err != nil {
-		fmt.Println(errorC.FormatError(err))
+		return nil, errorC.Wrap(err, errorC.Syntax, "Error in Query:")
 	}
 
 	err = semantic.AnalyzeSemantics(q)
 	if err != nil {
-		errorString := errorC.FormatError(err)
-		fmt.Println(errorString)
+		return nil, errorC.Wrap(err, errorC.Syntax, "Error in Query:")
 	}
 
-	for _, e := range entries {
-		r := entryToRecord(e)
+	rootOperator := queryExec.GetExecutionRoot(q)
 
-		if queryExec.Evaluate(q.Expr, r) {
-			res = append(res, e)
+	eContext := &queryExec.ExecContext{
+		Store: e.store,
+		Ast:   q.Expr,
+	}
+
+	if err := rootOperator.Setup(eContext); err != nil {
+		return nil, errorC.Wrap(err, errorC.Execution, "Setup failed:")
+	}
+	defer rootOperator.Free(eContext)
+
+	for {
+		e, exhausted, err := rootOperator.Next(eContext)
+		if err != nil {
+			return nil, errorC.Wrap(err, errorC.Execution, "Error in Query:")
 		}
+		if exhausted {
+			return res, nil
+		}
+		res = append(res, e)
 	}
-
-	return res
 }

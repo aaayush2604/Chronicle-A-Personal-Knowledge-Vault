@@ -3,6 +3,7 @@ package lexer
 type TokenType string
 
 const (
+	ALL        TokenType = "all"
 	COMMAND    TokenType = "command"
 	FIELD      TokenType = "field"
 	OPERATOR   TokenType = "operator"
