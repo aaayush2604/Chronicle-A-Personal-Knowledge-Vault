@@ -1,1 +1,3 @@
 #List all the bugs you find in this file
+
+- [FIXED] Terminal Backspace Bug: I was using chzyer/readline which had bug where it miscalculates the terminal's width. So when my input wrapped onto the next line, readline didn't know a wrap had happened, as far as it was concerned, everything was still on one line. Backspacing past that wrap point would then eat the line above instead of just deleting my input. The fix was switching to ergochat/readline, a community-maintained fork of the same library. It has proper terminal width detection, so it correctly tracks when input wraps and handles backspacing across those wrap points as expected.

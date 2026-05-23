@@ -6,7 +6,8 @@ import (
 
 	"chronicle/internal/config"
 	"chronicle/internal/engine"
-	"github.com/chzyer/readline"
+
+	"github.com/ergochat/readline"
 )
 
 type REPL struct {
@@ -31,11 +32,9 @@ func (r *REPL) Start() {
 
 	pageSize = r.config.PageSize
 
-
 	fmt.Println("Chronicle -- Personal Knowledge Vault")
 	fmt.Println("Type `help` to see available commands")
 	fmt.Println()
-
 
 	rl, err := readline.NewEx(&readline.Config{
 		Prompt: fgCyan + "chronicle > " + reset,
