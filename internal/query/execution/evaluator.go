@@ -105,16 +105,16 @@ func (e *Evaluator) VisitContainsExpression(expr *parser.Contains) any {
 func (e *Evaluator) VisitTypeFilterExpression(expr *parser.TypeFilter) any {
 	tVal := e.record["type"].(string)
 
-	for _, t := range expr.Words {
+	for i, t := range expr.Words {
 		switch t {
 		case "n":
-			t = "note"
+			expr.Words[i] = "note"
 		case "q":
-			t = "question"
+			expr.Words[i] = "question"
 		case "l":
-			t = "learning"
+			expr.Words[i] = "learning"
 		case "i":
-			t = "idea"
+			expr.Words[i] = "idea"
 		}
 	}
 
