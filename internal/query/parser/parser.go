@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"chronicle/internal/entry"
 	"chronicle/internal/errorC"
 	lexer "chronicle/internal/query/lexer"
 	"fmt"
@@ -37,11 +38,14 @@ func (p *Parser) checkTokenType(tTypes ...lexer.TokenType) bool {
 	return false
 }
 
-func (p *Parser) check(lexeme string) bool {
+func (p *Parser) check(lexemes ...string) bool {
 	if p.isAtEnd() {
 		return false
 	}
-	return p.peek().Lexeme == lexeme
+	for _, lexeme := range lexemes {
+		return p.peek().Lexeme == lexeme
+	}
+	return false
 }
 
 func (p *Parser) advance() *lexer.Token {
@@ -91,11 +95,21 @@ func (p *Parser) Parse() (*Query, error) {
 
 // Now we start adding a function to parse each of the grammar rules
 func (p *Parser) parseQuery() (*Query, error) {
-
-	if !p.matchLexeme("recall") {
+	var cmd CommandType
+	c := p.peek()
+	if c.TokenType != lexer.COMMAND {
+		return nil, errorC.New(errorC.Syntax, "Syntax Error: Query must begin with a command")
+	}
+	switch c.Lexeme {
+	case "recall":
+		cmd = RecallCommand
+	case "note":
+		cmd = NoteCommand
+	default:
 		err := errorC.New(errorC.Syntax, "Syntax Error: Query must begin with a command")
 		return nil, err
 	}
+	p.advance() //for consuming the cmd
 
 	expr, ok := p.parseAll()
 	if ok {
@@ -103,22 +117,39 @@ func (p *Parser) parseQuery() (*Query, error) {
 			return nil, errorC.New(errorC.Syntax, "There should be no input after ALL")
 		}
 		return &Query{
-			Command: RecallCommand,
+			Command: cmd,
 			Expr:    expr,
 		}, nil
 	}
 
-	expr, err := p.parseExpression()
+	queryNode := &Query{
+		Command: cmd,
+	}
+	switch cmd {
+	case RecallCommand:
+		expr, err := p.parseExpression()
 
-	if err != nil {
-		err := errorC.Wrap(err, errorC.Syntax, "Error parsing Expression:")
-		return nil, err
+		if err != nil {
+			err := errorC.Wrap(err, errorC.Syntax, "Error parsing Expression:")
+			return nil, err
+		}
+
+		queryNode.Expr = expr
+		return queryNode, nil
+
+	case NoteCommand:
+		payload, err := p.parsePayload()
+
+		if err != nil {
+			err := errorC.Wrap(err, errorC.Syntax, "Error parsing Payload:")
+			return nil, err
+		}
+
+		queryNode.Payload = payload
+		return queryNode, nil
 	}
 
-	return &Query{
-		Command: RecallCommand,
-		Expr:    expr,
-	}, nil
+	return nil, nil
 }
 
 func (p *Parser) parseAll() (Expr, bool) {
@@ -293,4 +324,43 @@ func (p *Parser) parseComparison() (Expr, error) {
 	p.advance()
 
 	return NewComparison(field, opToken, literal), nil
+}
+
+func (p *Parser) parsePayload() (Payload, error) {
+	eType := entry.TypeNote
+	if p.checkTokenType(lexer.ETYPE) {
+		switch p.peek().Lexeme {
+		case "l", "learning":
+			eType = entry.TypeLearning
+		case "q", "question":
+			eType = entry.TypeQuestion
+		case "i", "idea":
+			eType = entry.TypeIdea
+		case "imp", "important":
+			eType = entry.TypeImportant
+		}
+		p.advance()
+	}
+
+	var tags []*lexer.Token
+	for p.checkTokenType(lexer.TAG) {
+		tags = append(tags, p.peek())
+		p.advance()
+	}
+
+	if p.checkTokenType(lexer.COMMAND, lexer.ETYPE, lexer.TAG) {
+		return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Expected Entry Content at col %d", p.peek().Position))
+	}
+
+	var content []*lexer.Token
+	for !p.checkTokenType(lexer.EOF) {
+		content = append(content, p.peek())
+		p.advance()
+	}
+
+	return &NotePayload{
+		Type:    eType,
+		Tags:    tags,
+		Content: content,
+	}, nil
 }

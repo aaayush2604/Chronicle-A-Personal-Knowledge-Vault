@@ -6,7 +6,7 @@ import (
 )
 
 func TestNewEntrySetsID(t *testing.T) {
-	e := New(42, "hello")
+	e := New(42, "hello", []string{})
 
 	if e.ID != 42 {
 		t.Fatalf("expected ID 42, got %d", e.ID)
@@ -14,7 +14,7 @@ func TestNewEntrySetsID(t *testing.T) {
 }
 
 func TestNewEntrySetsContent(t *testing.T) {
-	e := New(1, "my content")
+	e := New(1, "my content", []string{})
 
 	if e.Content != "my content" {
 		t.Fatalf("expected content 'my content', got '%s'", e.Content)
@@ -22,7 +22,7 @@ func TestNewEntrySetsContent(t *testing.T) {
 }
 
 func TestNewEntrySetsCurrentVersion(t *testing.T) {
-	e := New(1, "hello")
+	e := New(1, "hello", []string{})
 
 	if e.Version != CurrentVersion {
 		t.Fatalf(
@@ -34,7 +34,7 @@ func TestNewEntrySetsCurrentVersion(t *testing.T) {
 }
 
 func TestNewEntrySetsDefaultType(t *testing.T) {
-	e := New(1, "hello")
+	e := New(1, "hello", []string{})
 
 	if e.Type != TypeNote {
 		t.Fatalf(
@@ -48,7 +48,7 @@ func TestNewEntrySetsDefaultType(t *testing.T) {
 func TestNewEntrySetsTimestamp(t *testing.T) {
 	before := time.Now()
 
-	e := New(1, "hello")
+	e := New(1, "hello", []string{})
 
 	after := time.Now()
 

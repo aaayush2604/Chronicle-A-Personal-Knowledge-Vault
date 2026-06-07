@@ -2,6 +2,7 @@ package store
 
 import (
 	"chronicle/internal/entry"
+	"chronicle/internal/query/lexer"
 	"os"
 	"path/filepath"
 	"testing"
@@ -23,7 +24,7 @@ func newTestStore(t *testing.T) *Store {
 func TestAddSingleEntry(t *testing.T) {
 	s := newTestStore(t)
 
-	e, err := s.Add("hello world", entry.TypeNote)
+	e, err := s.Add("hello world", []*lexer.Token{}, entry.TypeNote)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -48,9 +49,9 @@ func TestAddSingleEntry(t *testing.T) {
 func TestAddMultipleEntries(t *testing.T) {
 	s := newTestStore(t)
 
-	e1, _ := s.Add("a", entry.TypeNote)
-	e2, _ := s.Add("b", entry.TypeIdea)
-	e3, _ := s.Add("c", entry.TypeQuestion)
+	e1, _ := s.Add("a", []*lexer.Token{}, entry.TypeNote)
+	e2, _ := s.Add("b", []*lexer.Token{}, entry.TypeIdea)
+	e3, _ := s.Add("c", []*lexer.Token{}, entry.TypeQuestion)
 
 	if e1.ID != 1 {
 		t.Fatalf("expected first ID 1")
@@ -68,7 +69,7 @@ func TestAddMultipleEntries(t *testing.T) {
 func TestDeleteEntry(t *testing.T) {
 	s := newTestStore(t)
 
-	e, _ := s.Add("delete me", entry.TypeNote)
+	e, _ := s.Add("delete me", []*lexer.Token{}, entry.TypeNote)
 
 	err := s.Delete(e.ID)
 	if err != nil {
@@ -93,7 +94,7 @@ func TestDeleteNonExistentEntry(t *testing.T) {
 func TestDeleteAlreadyDeletedEntry(t *testing.T) {
 	s := newTestStore(t)
 
-	e, _ := s.Add("x", entry.TypeNote)
+	e, _ := s.Add("x", []*lexer.Token{}, entry.TypeNote)
 
 	if err := s.Delete(e.ID); err != nil {
 		t.Fatal(err)
@@ -109,7 +110,7 @@ func TestDeleteAlreadyDeletedEntry(t *testing.T) {
 func TestCheckDelete(t *testing.T) {
 	s := newTestStore(t)
 
-	e, _ := s.Add("x", entry.TypeNote)
+	e, _ := s.Add("x", []*lexer.Token{}, entry.TypeNote)
 
 	if err := s.Delete(e.ID); err != nil {
 		t.Fatal(err)
@@ -131,7 +132,7 @@ func TestReplaySingleEntry(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = s.Add("hello", entry.TypeNote)
+	_, err = s.Add("hello", []*lexer.Token{}, entry.TypeNote)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -161,7 +162,7 @@ func TestReplayDeletedEntry(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	e, _ := s.Add("hello", entry.TypeNote)
+	e, _ := s.Add("hello", []*lexer.Token{}, entry.TypeNote)
 
 	if err := s.Delete(e.ID); err != nil {
 		t.Fatal(err)
@@ -183,16 +184,16 @@ func TestReplayComputesNextID(t *testing.T) {
 
 	s, _ := New(logPath)
 
-	s.Add("a", entry.TypeNote)
-	s.Add("b", entry.TypeNote)
-	s.Add("c", entry.TypeNote)
+	s.Add("a", []*lexer.Token{}, entry.TypeNote)
+	s.Add("b", []*lexer.Token{}, entry.TypeNote)
+	s.Add("c", []*lexer.Token{}, entry.TypeNote)
 
 	reloaded, err := New(logPath)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	e, err := reloaded.Add("d", entry.TypeNote)
+	e, err := reloaded.Add("d", []*lexer.Token{}, entry.TypeNote)
 	if err != nil {
 		t.Fatal(err)
 	}

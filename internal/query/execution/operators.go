@@ -2,6 +2,8 @@ package execution
 
 import (
 	"chronicle/internal/entry"
+	"chronicle/internal/errorC"
+	"chronicle/internal/query/lexer"
 	"chronicle/internal/query/parser"
 )
 
@@ -66,7 +68,7 @@ func (this *Filter) next(context *ExecContext) (entry.KnowledgeEntry, bool, erro
 		if exhausted {
 			return entry.KnowledgeEntry{}, true, nil
 		}
-		if Evaluate(this.ast, EntryToRecord(e)) {
+		if EvaluateRecall(this.ast, EntryToRecord(e)) {
 			return e, false, nil
 		}
 	}
@@ -91,10 +93,11 @@ func (this *Filter) free(context *ExecContext) error {
 }
 
 // root operators
-type Command interface {
+type Cmd interface {
 	Setup(context *ExecContext) error
 	Free(context *ExecContext) error
 	Next(context *ExecContext) (entry.KnowledgeEntry, bool, error)
+	Write(context *ExecContext) (int, error)
 }
 
 type Recall struct {
@@ -138,7 +141,40 @@ func (this *Recall) Free(context *ExecContext) error {
 	return nil
 }
 
-func GetExecutionRoot(expr *parser.Query) Command {
+func (this *Recall) Write(context *ExecContext) (int, error) {
+	return -1, nil
+}
+
+type Note struct {
+	payload parser.Payload
+}
+
+func (this *Note) Setup(context *ExecContext) error {
+	this.payload = context.Payload
+	return nil
+}
+
+func (this *Note) Free(context *ExecContext) error {
+	this.payload = nil
+	return nil
+}
+
+func (this *Note) Next(context *ExecContext) (entry.KnowledgeEntry, bool, error) {
+	return entry.KnowledgeEntry{}, false, nil
+}
+
+func (this *Note) Write(context *ExecContext) (entry.KnowledgeEntry, error) {
+	eType, tags, content := EvaluatePayload(this.payload)
+
+	e, err := context.Store.Add(TokensToString(content.([]*lexer.Token)), tags.([]*lexer.Token), eType.(entry.EntryType))
+	if err != nil {
+		return entry.KnowledgeEntry{}, errorC.Wrap(err, errorC.Execution, "Error in Adding Entry to Store")
+	}
+
+	return e, nil
+}
+
+func GetExecutionRoot(expr *parser.Query) Cmd {
 	switch expr.Command {
 	case parser.RecallCommand:
 		return NewRecall(expr.Expr)

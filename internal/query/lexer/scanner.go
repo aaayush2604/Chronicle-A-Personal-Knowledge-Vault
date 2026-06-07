@@ -133,6 +133,14 @@ func (s *Scanner) addIdentifier() {
 	s.addToken(tType)
 }
 
+func (s *Scanner) addTag() {
+	for s.isAlphaNumeric(s.peek()) {
+		s.advance()
+	}
+	tagText := strings.ToLower(s.source[s.start+1 : s.current])
+	s.addTokenLiteral(TAG, tagText)
+}
+
 func (s *Scanner) scanToken() {
 	c := s.advance()
 	switch c {
@@ -187,6 +195,8 @@ func (s *Scanner) scanToken() {
 		}
 	case '"':
 		s.addString()
+	case '#':
+		s.addTag()
 	case ' ', '\r', '\t', '\n':
 		return
 	default:

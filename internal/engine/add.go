@@ -1,9 +1,12 @@
 package engine
 
-import "chronicle/internal/entry"
+import (
+	"chronicle/internal/entry"
+	"chronicle/internal/query/lexer"
+)
 
 func (e *Engine) AddNote(content string, t entry.EntryType) (entry.KnowledgeEntry, error) {
-	ke, err := e.store.Add(content, t)
+	ke, err := e.store.Add(content, []*lexer.Token{}, t)
 
 	if err != nil {
 		return entry.KnowledgeEntry{}, err

@@ -33,7 +33,7 @@ func (r *REPL) handle(input string) bool {
 
 		return false
 
-	case "note", "idea", "question", "learning", "important":
+	case "idea", "question", "learning", "important":
 		if len(parts) < 2 {
 			fmt.Printf("Usage: %s <text>\n", cmd)
 			return false
@@ -61,6 +61,19 @@ func (r *REPL) handle(input string) bool {
 			return false
 		}
 		fmt.Printf("Saved [%d] (%s)\n", e.ID, t)
+		return false
+	case "note":
+		if len(parts) < 3 {
+			fmt.Printf("Usage: note <entry type> <#tags (optional)> <text>\n", cmd)
+			return false
+		}
+
+		results, err := r.engine.Query(input)
+		if err != nil {
+			fmt.Println(errorC.FormatError(err))
+		}
+		printEntries(results)
+
 		return false
 
 	case "add":

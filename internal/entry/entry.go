@@ -10,14 +10,16 @@ type KnowledgeEntry struct {
 	Timestamp time.Time
 	Type      EntryType
 	Content   string
+	Tags      []string
 }
 
-func New(id int, content string) KnowledgeEntry {
+func New(id int, content string, tags []string) KnowledgeEntry {
 	return KnowledgeEntry{
 		Version:   CurrentVersion,
 		ID:        id,
 		Timestamp: time.Now(),
 		Type:      TypeNote,
 		Content:   content,
+		Tags:      tags,
 	}
 }

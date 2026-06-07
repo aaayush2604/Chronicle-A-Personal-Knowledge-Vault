@@ -9,18 +9,28 @@ import (
 	"chronicle/internal/query/util"
 )
 
-type SemanticAnalyzer struct{}
+type ExprSemanticAnalyzer struct{}
+
+type PayloadSemanticAnalyzer struct{}
 
 func AnalyzeSemantics(q *parser.Query) error {
-	analyzer := &SemanticAnalyzer{}
-	res := q.Expr.Accept(analyzer)
+
+	var res any
+	switch q.Command {
+	case parser.RecallCommand:
+		analyzer := &ExprSemanticAnalyzer{}
+		res = q.Expr.Accept(analyzer)
+	case parser.NoteCommand:
+		analyzer := &PayloadSemanticAnalyzer{}
+		res, _, _ = q.Payload.Accept(analyzer)
+	}
 	if err, ok := res.(error); ok && err != nil {
 		return errorC.Wrap(err, errorC.Validation, "Error in Semantics: ")
 	}
 	return nil
 }
 
-func (s *SemanticAnalyzer) VisitLogicalExpression(expr *parser.Logical) any {
+func (s *ExprSemanticAnalyzer) VisitLogicalExpression(expr *parser.Logical) any {
 	Op := expr.Operator
 	if Op.TokenType != lexer.LOGICAL {
 		return errorC.New(errorC.Validation, fmt.Sprintf("Error in %v Semantics due to Incorrect Operator TokenType at col  %v", Op.Lexeme, Op.Position))
@@ -80,7 +90,7 @@ func isValidComparison(field *lexer.Token, Value *lexer.Token) bool {
 	return true
 }
 
-func (s *SemanticAnalyzer) VisitComparisonExpression(expr *parser.Comparison) any {
+func (s *ExprSemanticAnalyzer) VisitComparisonExpression(expr *parser.Comparison) any {
 	field := expr.Field
 	if field.TokenType != lexer.IDENTIFIER {
 		return errorC.New(errorC.Validation, fmt.Sprintf("Error in Comparison Semantics due to Incorrect Field TokenType at col  %v", field.Position))
@@ -105,7 +115,7 @@ func (s *SemanticAnalyzer) VisitComparisonExpression(expr *parser.Comparison) an
 	return nil
 }
 
-func (s *SemanticAnalyzer) VisitContainsExpression(expr *parser.Contains) any {
+func (s *ExprSemanticAnalyzer) VisitContainsExpression(expr *parser.Contains) any {
 	words := expr.Words
 	if len(words) == 0 {
 		return errorC.New(errorC.Validation, "Empty Contains Not Allowed")
@@ -113,7 +123,7 @@ func (s *SemanticAnalyzer) VisitContainsExpression(expr *parser.Contains) any {
 	return nil
 }
 
-func (s *SemanticAnalyzer) VisitTypeFilterExpression(expr *parser.TypeFilter) any {
+func (s *ExprSemanticAnalyzer) VisitTypeFilterExpression(expr *parser.TypeFilter) any {
 	words := expr.Words
 	if len(words) == 0 {
 		return errorC.New(errorC.Validation, "Empty Type Not Allowed")
@@ -121,7 +131,7 @@ func (s *SemanticAnalyzer) VisitTypeFilterExpression(expr *parser.TypeFilter) an
 	return nil
 }
 
-func (s *SemanticAnalyzer) VisitGroupingExpression(expr *parser.Grouping) any {
+func (s *ExprSemanticAnalyzer) VisitGroupingExpression(expr *parser.Grouping) any {
 	res := expr.Expression.Accept(s)
 	if err, ok := res.(error); ok && err != nil {
 		return errorC.Wrap(err, errorC.Validation, "Error in Grouping: ")
@@ -129,10 +139,20 @@ func (s *SemanticAnalyzer) VisitGroupingExpression(expr *parser.Grouping) any {
 	return nil
 }
 
-func (s *SemanticAnalyzer) VisitLiteralExpression(expr *parser.Literal) any {
+func (s *ExprSemanticAnalyzer) VisitLiteralExpression(expr *parser.Literal) any {
 	return nil
 }
 
-func (s *SemanticAnalyzer) VisitAllExpression(expr *parser.All) any {
+func (s *ExprSemanticAnalyzer) VisitAllExpression(expr *parser.All) any {
 	return nil
+}
+
+func (s *PayloadSemanticAnalyzer) VisitNotePayload(payload *parser.NotePayload) (any, any, any) {
+	if payload.Type == "" {
+		return errorC.New(errorC.Validation, "No Entry Type Specified"), nil, nil
+	}
+	if len(payload.Content) == 0 {
+		return errorC.New(errorC.Validation, "No Content specified for the entry"), nil, nil
+	}
+	return nil, nil, nil
 }

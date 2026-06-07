@@ -20,4 +20,6 @@ const (
 	NUMBER     TokenType = "number"
 	IDENTIFIER TokenType = "identifier"
 	EOF        TokenType = "end_of_input"
+	TAG        TokenType = "tag"
+	ETYPE      TokenType = "entry_type"
 )

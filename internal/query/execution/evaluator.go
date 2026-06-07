@@ -12,16 +12,16 @@ import (
 
 type Record map[string]any
 
-type Evaluator struct {
+type AstEvaluator struct {
 	record Record
 }
 
-func Evaluate(expr parser.Expr, record Record) bool {
-	e := &Evaluator{record: record}
+func EvaluateRecall(expr parser.Expr, record Record) bool {
+	e := &AstEvaluator{record: record}
 	return expr.Accept(e).(bool)
 }
 
-func (e *Evaluator) VisitLogicalExpression(expr *parser.Logical) any {
+func (e *AstEvaluator) VisitLogicalExpression(expr *parser.Logical) any {
 	left := expr.Left.Accept(e).(bool)
 
 	op := strings.ToLower(expr.Operator.Lexeme)
@@ -41,7 +41,7 @@ func (e *Evaluator) VisitLogicalExpression(expr *parser.Logical) any {
 	return false
 }
 
-func (e *Evaluator) VisitComparisonExpression(expr *parser.Comparison) any {
+func (e *AstEvaluator) VisitComparisonExpression(expr *parser.Comparison) any {
 	inputField := expr.Field.Lexeme
 	field := inputField
 
@@ -77,11 +77,11 @@ func (e *Evaluator) VisitComparisonExpression(expr *parser.Comparison) any {
 	return false
 }
 
-func (e *Evaluator) VisitGroupingExpression(expr *parser.Grouping) any {
+func (e *AstEvaluator) VisitGroupingExpression(expr *parser.Grouping) any {
 	return expr.Accept(e).(bool)
 }
 
-func (e *Evaluator) VisitContainsExpression(expr *parser.Contains) any {
+func (e *AstEvaluator) VisitContainsExpression(expr *parser.Contains) any {
 	content := e.record["content"].(string)
 	flag := false
 
@@ -102,7 +102,7 @@ func (e *Evaluator) VisitContainsExpression(expr *parser.Contains) any {
 	return true
 }
 
-func (e *Evaluator) VisitTypeFilterExpression(expr *parser.TypeFilter) any {
+func (e *AstEvaluator) VisitTypeFilterExpression(expr *parser.TypeFilter) any {
 	tVal := e.record["type"].(string)
 
 	for i, t := range expr.Words {
@@ -115,13 +115,15 @@ func (e *Evaluator) VisitTypeFilterExpression(expr *parser.TypeFilter) any {
 			expr.Words[i] = "learning"
 		case "i":
 			expr.Words[i] = "idea"
+		case "imp":
+			expr.Words[i] = "important"
 		}
 	}
 
 	return slices.Contains(expr.Words, tVal)
 }
 
-func (e *Evaluator) VisitLiteralExpression(expr *parser.Literal) any {
+func (e *AstEvaluator) VisitLiteralExpression(expr *parser.Literal) any {
 	t := expr.Val
 
 	switch t.TokenType {
@@ -134,7 +136,7 @@ func (e *Evaluator) VisitLiteralExpression(expr *parser.Literal) any {
 	return nil
 }
 
-func (e *Evaluator) VisitAllExpression(expr *parser.All) any {
+func (e *AstEvaluator) VisitAllExpression(expr *parser.All) any {
 	return true
 }
 
@@ -226,4 +228,15 @@ func adjustTime(rVal *any, qVal *any) {
 
 	*rVal = rInt
 	*qVal = qInt
+}
+
+type PayloadEvaluator struct{}
+
+func EvaluatePayload(p parser.Payload) (any, any, any) {
+	e := &PayloadEvaluator{}
+	return p.Accept(e)
+}
+
+func (e *PayloadEvaluator) VisitNotePayload(p *parser.NotePayload) (any, any, any) {
+	return p.Type, p.Tags, p.Content
 }

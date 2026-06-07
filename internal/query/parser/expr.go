@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"chronicle/internal/entry"
 	lexer "chronicle/internal/query/lexer"
 )
 
@@ -8,6 +9,7 @@ type CommandType string
 
 const (
 	RecallCommand CommandType = "recall"
+	NoteCommand   CommandType = "note"
 )
 
 type ExprVisitor interface {
@@ -20,14 +22,24 @@ type ExprVisitor interface {
 	VisitAllExpression(*All) any
 }
 
+type PayloadVisitor interface {
+	VisitNotePayload(*NotePayload) (any, any, any)
+}
+
 type Expr interface {
 	exprNode()
 	Accept(v ExprVisitor) any
 }
 
+type Payload interface {
+	payloadNode()
+	Accept(v PayloadVisitor) (any, any, any)
+}
+
 type Query struct {
 	Command CommandType
 	Expr    Expr
+	Payload Payload
 }
 
 type Logical struct {
@@ -140,4 +152,16 @@ func (a *All) exprNode() {}
 
 func (a *All) Accept(v ExprVisitor) any {
 	return v.VisitAllExpression(a)
+}
+
+type NotePayload struct {
+	Type    entry.EntryType
+	Tags    []*lexer.Token
+	Content []*lexer.Token
+}
+
+func (n *NotePayload) payloadNode() {}
+
+func (n *NotePayload) Accept(v PayloadVisitor) (any, any, any) {
+	return v.VisitNotePayload(n)
 }

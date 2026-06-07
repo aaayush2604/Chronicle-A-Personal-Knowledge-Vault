@@ -33,7 +33,7 @@ func TestEvaluateAll(t *testing.T) {
 		"date":    time.Now(),
 	}
 
-	if !Evaluate(expr, record) {
+	if !EvaluateRecall(expr, record) {
 		t.Fatalf("expected true")
 	}
 }
@@ -48,7 +48,7 @@ func TestEvaluateContainsSuccess(t *testing.T) {
 		"content": "I love database systems",
 	}
 
-	if !Evaluate(expr, record) {
+	if !EvaluateRecall(expr, record) {
 		t.Fatalf("expected true")
 	}
 }
@@ -63,7 +63,7 @@ func TestEvaluateContainsFailure(t *testing.T) {
 		"content": "golang programming",
 	}
 
-	if Evaluate(expr, record) {
+	if EvaluateRecall(expr, record) {
 		t.Fatalf("expected false")
 	}
 }
@@ -78,7 +78,7 @@ func TestEvaluateTypeFilterSuccess(t *testing.T) {
 		"type": "note",
 	}
 
-	if !Evaluate(expr, record) {
+	if !EvaluateRecall(expr, record) {
 		t.Fatalf("expected true")
 	}
 }
@@ -93,7 +93,7 @@ func TestEvaluateTypeFilterFailure(t *testing.T) {
 		"type": "idea",
 	}
 
-	if Evaluate(expr, record) {
+	if EvaluateRecall(expr, record) {
 		t.Fatalf("expected false")
 	}
 }
@@ -108,7 +108,7 @@ func TestEvaluateLenGreaterThan(t *testing.T) {
 		"len": 20,
 	}
 
-	if !Evaluate(expr, record) {
+	if !EvaluateRecall(expr, record) {
 		t.Fatalf("expected true")
 	}
 }
@@ -123,7 +123,7 @@ func TestEvaluateLenLessThan(t *testing.T) {
 		"len": 20,
 	}
 
-	if Evaluate(expr, record) {
+	if EvaluateRecall(expr, record) {
 		t.Fatalf("expected false")
 	}
 }
@@ -138,7 +138,7 @@ func TestEvaluateAndExpression(t *testing.T) {
 		"len": 20,
 	}
 
-	if !Evaluate(expr, record) {
+	if !EvaluateRecall(expr, record) {
 		t.Fatalf("expected true")
 	}
 }
@@ -153,7 +153,7 @@ func TestEvaluateOrExpression(t *testing.T) {
 		"len": 20,
 	}
 
-	if !Evaluate(expr, record) {
+	if !EvaluateRecall(expr, record) {
 		t.Fatalf("expected true")
 	}
 }
@@ -177,7 +177,7 @@ func TestEvaluateDateComparison(t *testing.T) {
 		),
 	}
 
-	if !Evaluate(expr, record) {
+	if !EvaluateRecall(expr, record) {
 		t.Fatalf("expected true")
 	}
 }
@@ -201,7 +201,7 @@ func TestEvaluateTimeComparison(t *testing.T) {
 		),
 	}
 
-	if !Evaluate(expr, record) {
+	if !EvaluateRecall(expr, record) {
 		t.Fatalf("expected true")
 	}
 }
@@ -216,7 +216,7 @@ func TestTypeAliasNote(t *testing.T) {
 		"type": "note",
 	}
 
-	if !Evaluate(expr, record) {
+	if !EvaluateRecall(expr, record) {
 		t.Fatalf("expected alias n to match note")
 	}
 }
@@ -231,7 +231,7 @@ func TestTypeAliasIdea(t *testing.T) {
 		"type": "idea",
 	}
 
-	if !Evaluate(expr, record) {
+	if !EvaluateRecall(expr, record) {
 		t.Fatalf("expected alias i to match idea")
 	}
 }
@@ -246,7 +246,7 @@ func TestTypeAliasQuestion(t *testing.T) {
 		"type": "question",
 	}
 
-	if !Evaluate(expr, record) {
+	if !EvaluateRecall(expr, record) {
 		t.Fatalf("expected alias q to match question")
 	}
 }
@@ -261,7 +261,7 @@ func TestTypeAliasLearning(t *testing.T) {
 		"type": "learning",
 	}
 
-	if !Evaluate(expr, record) {
+	if !EvaluateRecall(expr, record) {
 		t.Fatalf("expected alias l to match learning")
 	}
 }

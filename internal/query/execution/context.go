@@ -6,6 +6,7 @@ import (
 )
 
 type ExecContext struct {
-	Store *store.Store
-	Ast   parser.Expr
+	Store   *store.Store
+	Ast     parser.Expr
+	Payload parser.Payload
 }

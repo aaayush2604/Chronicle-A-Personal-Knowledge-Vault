@@ -2,6 +2,7 @@ package store
 
 import (
 	"chronicle/internal/entry"
+	"chronicle/internal/query/lexer"
 	"sync"
 	"time"
 )
@@ -32,11 +33,16 @@ func New(logPath string) (*Store, error) {
 	return s, nil
 }
 
-func (s *Store) Add(content string, t entry.EntryType) (entry.KnowledgeEntry, error) {
+func (s *Store) Add(content string, tags []*lexer.Token, t entry.EntryType) (entry.KnowledgeEntry, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	e := entry.New(s.nextID, content)
+	var Tags []string
+	for _, l := range tags {
+		Tags = append(Tags, l.Literal.(string))
+	}
+
+	e := entry.New(s.nextID, content, Tags)
 	e.Type = t
 	s.nextID++
 
