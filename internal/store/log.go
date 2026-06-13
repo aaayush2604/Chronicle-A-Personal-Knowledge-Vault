@@ -5,6 +5,7 @@ import (
 	"chronicle/internal/entry"
 	"fmt"
 	"os"
+	"strings"
 )
 
 func (s *Store) append(e entry.KnowledgeEntry) error {
@@ -18,12 +19,22 @@ func (s *Store) append(e entry.KnowledgeEntry) error {
 	}
 	defer file.Close()
 
+	var sb strings.Builder
+	for _, t := range e.Tags {
+		sb.WriteString(t)
+		sb.WriteString(",")
+	}
+	tags := sb.String()
+	if len(tags) > 0 && tags[len(tags)-1] == ',' {
+		tags = tags[:len(tags)-1]
+	}
 	writer := bufio.NewWriter(file)
 
 	line := fmt.Sprintf(
-		"%d|%d|%s|%s|%s\n",
+		"%d|%d|%s|%s|%s|%s\n",
 		e.Version,
 		e.ID,
+		tags,
 		e.Timestamp.Format(entry.TimeFormat),
 		e.Type,
 		e.Content,

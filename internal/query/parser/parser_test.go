@@ -203,3 +203,14 @@ func TestAndHasHigherPrecedenceThanOr(t *testing.T) {
 		)
 	}
 }
+
+func TestParseNoteCommand(t *testing.T) {
+	q := parseQuery(
+		t,
+		`note #go #database "hello world"`,
+	)
+
+	if q.Command != NoteCommand {
+		t.Fatalf("expected note command")
+	}
+}

@@ -39,8 +39,9 @@ func (e *Engine) Query(input string) ([]entry.KnowledgeEntry, error) {
 	rootOperator := queryExec.GetExecutionRoot(q)
 
 	eContext := &queryExec.ExecContext{
-		Store: e.store,
-		Ast:   q.Expr,
+		Store:   e.store,
+		Ast:     q.Expr,
+		Payload: q.Payload,
 	}
 
 	if err := rootOperator.Setup(eContext); err != nil {
@@ -48,14 +49,26 @@ func (e *Engine) Query(input string) ([]entry.KnowledgeEntry, error) {
 	}
 	defer rootOperator.Free(eContext)
 
-	for {
-		e, exhausted, err := rootOperator.Next(eContext)
+	switch rootOperator.GetType() {
+	case queryExec.RecallType:
+		for {
+			e, exhausted, err := rootOperator.Next(eContext)
+			if err != nil {
+				return nil, errorC.Wrap(err, errorC.Execution, "Error in Query:")
+			}
+			if exhausted {
+				return res, nil
+			}
+			res = append(res, e)
+		}
+	case queryExec.NoteType:
+		e, err := rootOperator.Write(eContext)
 		if err != nil {
 			return nil, errorC.Wrap(err, errorC.Execution, "Error in Query:")
 		}
-		if exhausted {
-			return res, nil
-		}
+
 		res = append(res, e)
 	}
+
+	return res, nil
 }

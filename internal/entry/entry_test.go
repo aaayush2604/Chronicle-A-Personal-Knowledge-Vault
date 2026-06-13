@@ -87,7 +87,7 @@ func TestEntryTypesAreUnique(t *testing.T) {
 }
 
 func TestCurrentVersionMatchesLatestVersion(t *testing.T) {
-	if CurrentVersion != Version2 {
+	if CurrentVersion != Version3 {
 		t.Fatalf(
 			"CurrentVersion should point to latest schema version",
 		)

@@ -20,7 +20,7 @@ func EntryToRecord(e entry.KnowledgeEntry) Record {
 func TokensToString(list []*lexer.Token) string {
 	var sb strings.Builder
 	for _, l := range list {
-		sb.WriteString(l.Literal.(string))
+		sb.WriteString(l.Lexeme)
 		sb.WriteString(" ")
 	}
 	return sb.String()

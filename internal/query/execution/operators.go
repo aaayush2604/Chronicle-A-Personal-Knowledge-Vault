@@ -7,6 +7,13 @@ import (
 	"chronicle/internal/query/parser"
 )
 
+type CmdOperatorType string
+
+const (
+	RecallType CmdOperatorType = "recall"
+	NoteType   CmdOperatorType = "note"
+)
+
 // execution pipeline operators
 type Operator interface {
 	next(context *ExecContext) (entry.KnowledgeEntry, bool, error)
@@ -94,21 +101,28 @@ func (this *Filter) free(context *ExecContext) error {
 
 // root operators
 type Cmd interface {
+	GetType() CmdOperatorType
 	Setup(context *ExecContext) error
 	Free(context *ExecContext) error
 	Next(context *ExecContext) (entry.KnowledgeEntry, bool, error)
-	Write(context *ExecContext) (int, error)
+	Write(context *ExecContext) (entry.KnowledgeEntry, error)
 }
 
 type Recall struct {
-	ast   parser.Expr
-	child Operator
+	cmdType CmdOperatorType
+	ast     parser.Expr
+	child   Operator
 }
 
 func NewRecall(tree parser.Expr) *Recall {
 	return &Recall{
-		ast: tree,
+		cmdType: RecallType,
+		ast:     tree,
 	}
+}
+
+func (this *Recall) GetType() CmdOperatorType {
+	return this.cmdType
 }
 
 func (this *Recall) Next(context *ExecContext) (entry.KnowledgeEntry, bool, error) {
@@ -141,16 +155,27 @@ func (this *Recall) Free(context *ExecContext) error {
 	return nil
 }
 
-func (this *Recall) Write(context *ExecContext) (int, error) {
-	return -1, nil
+func (this *Recall) Write(context *ExecContext) (entry.KnowledgeEntry, error) {
+	return entry.KnowledgeEntry{}, nil
 }
 
 type Note struct {
+	cmdType CmdOperatorType
 	payload parser.Payload
 }
 
+func NewNote(p parser.Payload) *Note {
+	return &Note{
+		cmdType: NoteType,
+		payload: p,
+	}
+}
+
+func (this *Note) GetType() CmdOperatorType {
+	return this.cmdType
+}
+
 func (this *Note) Setup(context *ExecContext) error {
-	this.payload = context.Payload
 	return nil
 }
 
@@ -178,6 +203,8 @@ func GetExecutionRoot(expr *parser.Query) Cmd {
 	switch expr.Command {
 	case parser.RecallCommand:
 		return NewRecall(expr.Expr)
+	case parser.NoteCommand:
+		return NewNote(expr.Payload)
 	default:
 		return nil
 	}

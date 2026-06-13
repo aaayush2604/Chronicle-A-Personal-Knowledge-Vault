@@ -225,3 +225,29 @@ func TestDeletedEntriesNotReturnedAfterRestart(t *testing.T) {
 		)
 	}
 }
+
+func TestQueryNoteCommand(t *testing.T) {
+	eng := buildEngine(t)
+
+	results, err := eng.Query(
+		`note #go #database "hello world"`,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(results) != 1 {
+		t.Fatalf(
+			"expected 1 result, got %d",
+			len(results),
+		)
+	}
+
+	if results[0].Content != `"hello world" ` {
+		t.Fatalf("content mismatch")
+	}
+
+	if len(results[0].Tags) != 2 {
+		t.Fatalf("expected two tags")
+	}
+}

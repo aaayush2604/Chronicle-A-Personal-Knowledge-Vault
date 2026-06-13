@@ -64,7 +64,7 @@ func (r *REPL) handle(input string) bool {
 		return false
 	case "note":
 		if len(parts) < 3 {
-			fmt.Printf("Usage: note <entry type> <#tags (optional)> <text>\n", cmd)
+			fmt.Printf("Usage: note <entry type> <#tags (optional)> <text>\n")
 			return false
 		}
 

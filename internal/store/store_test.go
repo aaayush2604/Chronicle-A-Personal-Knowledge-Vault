@@ -230,9 +230,9 @@ func TestReplayPartiallyCorruptedLog(t *testing.T) {
 	dir := t.TempDir()
 	logPath := filepath.Join(dir, "chronicle.log")
 
-	content := `2|1|2025-01-01T10:00:00Z|note|first
+	content := `3|1||2025-01-01T10:00:00Z|note|first
 this is garbage
-2|2|2025-01-01T11:00:00Z|idea|second
+3|2||2025-01-01T11:00:00Z|idea|second
 `
 
 	err := os.WriteFile(logPath, []byte(content), 0644)
@@ -284,3 +284,88 @@ this is garbage
 // 		)
 // 	}
 // }
+
+func TestReplayPreservesTags(t *testing.T) {
+	dir := t.TempDir()
+	logPath := filepath.Join(dir, "chronicle.log")
+
+	s, err := New(logPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tags := []*lexer.Token{
+		{
+			Lexeme: "go",
+		},
+		{
+			Lexeme: "database",
+		},
+	}
+
+	_, err = s.Add(
+		"hello",
+		tags,
+		entry.TypeNote,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	reloaded, err := New(logPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	entries := reloaded.List()
+
+	if len(entries) != 1 {
+		t.Fatalf("expected one entry")
+	}
+
+	if len(entries[0].Tags) != 2 {
+		t.Fatalf("expected two tags")
+	}
+
+	if entries[0].Tags[0] != "go" {
+		t.Fatalf("expected first tag go")
+	}
+
+	if entries[0].Tags[1] != "database" {
+		t.Fatalf("expected second tag database")
+	}
+}
+
+func TestReplayEntryWithoutTags(t *testing.T) {
+	dir := t.TempDir()
+	logPath := filepath.Join(dir, "chronicle.log")
+
+	s, err := New(logPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = s.Add(
+		"hello",
+		[]*lexer.Token{},
+		entry.TypeNote,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	reloaded, err := New(logPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	entries := reloaded.List()
+
+	if len(entries) != 1 {
+		t.Fatalf("expected one entry")
+	}
+
+	if len(entries[0].Tags) != 0 {
+		t.Fatalf("expected no tags")
+	}
+}

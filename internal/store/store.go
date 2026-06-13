@@ -39,9 +39,8 @@ func (s *Store) Add(content string, tags []*lexer.Token, t entry.EntryType) (ent
 
 	var Tags []string
 	for _, l := range tags {
-		Tags = append(Tags, l.Literal.(string))
+		Tags = append(Tags, l.Lexeme)
 	}
-
 	e := entry.New(s.nextID, content, Tags)
 	e.Type = t
 	s.nextID++

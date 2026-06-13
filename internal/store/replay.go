@@ -62,13 +62,17 @@ func (s *Store) replay() error {
 func parseLine(line string) (entry.KnowledgeEntry, error) {
 	parts := strings.Split(line, "|")
 
-	if len(parts) != 5 {
+	if len(parts) != 6 {
 		return entry.KnowledgeEntry{}, fmt.Errorf("invalid field count")
 	}
 
 	version, _ := strconv.Atoi(parts[0])
 	id, _ := strconv.Atoi(parts[1])
-	ts, err := time.Parse(entry.TimeFormat, parts[2])
+	tags := []string{}
+	if parts[2] != "" {
+		tags = strings.Split(parts[2], ",")
+	}
+	ts, err := time.Parse(entry.TimeFormat, parts[3])
 	if err != nil {
 		return entry.KnowledgeEntry{}, fmt.Errorf("invalid time format ")
 	}
@@ -76,8 +80,9 @@ func parseLine(line string) (entry.KnowledgeEntry, error) {
 	return entry.KnowledgeEntry{
 		Version:   entry.SchemaVersion(version),
 		ID:        id,
+		Tags:      tags,
 		Timestamp: ts,
-		Type:      entry.EntryType(parts[3]),
-		Content:   parts[4],
+		Type:      entry.EntryType(parts[4]),
+		Content:   parts[5],
 	}, nil
 }
