@@ -3,3 +3,4 @@ data/
 chronicle.log
 changes.diff
 all_tests.txt
+dist/
