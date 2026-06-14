@@ -11,7 +11,7 @@ func parseExpr(t *testing.T, input string) parser.Expr {
 	t.Helper()
 
 	scanner := lexer.NewScanner(input)
-	tokens := scanner.ScanTokens()
+	tokens, err := scanner.ScanTokens()
 
 	p := parser.NewParser(tokens)
 
@@ -71,7 +71,7 @@ func TestEvaluateContainsFailure(t *testing.T) {
 func TestEvaluateTypeFilterSuccess(t *testing.T) {
 	expr := parseExpr(
 		t,
-		`recall type["note"]`,
+		`recall type[note]`,
 	)
 
 	record := Record{
@@ -86,7 +86,7 @@ func TestEvaluateTypeFilterSuccess(t *testing.T) {
 func TestEvaluateTypeFilterFailure(t *testing.T) {
 	expr := parseExpr(
 		t,
-		`recall type["note"]`,
+		`recall type[note]`,
 	)
 
 	record := Record{
@@ -209,7 +209,7 @@ func TestEvaluateTimeComparison(t *testing.T) {
 func TestTypeAliasNote(t *testing.T) {
 	expr := parseExpr(
 		t,
-		`recall type["n"]`,
+		`recall type[n]`,
 	)
 
 	record := Record{
@@ -224,7 +224,7 @@ func TestTypeAliasNote(t *testing.T) {
 func TestTypeAliasIdea(t *testing.T) {
 	expr := parseExpr(
 		t,
-		`recall type["i"]`,
+		`recall type[i]`,
 	)
 
 	record := Record{
@@ -239,7 +239,7 @@ func TestTypeAliasIdea(t *testing.T) {
 func TestTypeAliasQuestion(t *testing.T) {
 	expr := parseExpr(
 		t,
-		`recall type["q"]`,
+		`recall type[q]`,
 	)
 
 	record := Record{
@@ -254,7 +254,7 @@ func TestTypeAliasQuestion(t *testing.T) {
 func TestTypeAliasLearning(t *testing.T) {
 	expr := parseExpr(
 		t,
-		`recall type["l"]`,
+		`recall type[l]`,
 	)
 
 	record := Record{
@@ -263,5 +263,41 @@ func TestTypeAliasLearning(t *testing.T) {
 
 	if !EvaluateRecall(expr, record) {
 		t.Fatalf("expected alias l to match learning")
+	}
+}
+
+func TestEvaluateTagsSuccess(t *testing.T) {
+	expr := parseExpr(
+		t,
+		`recall tags[go,database]`,
+	)
+
+	record := Record{
+		"tags": []string{
+			"database",
+			"project",
+		},
+	}
+
+	if !EvaluateRecall(expr, record) {
+		t.Fatalf("expected true")
+	}
+}
+
+func TestEvaluateTagsFailure(t *testing.T) {
+	expr := parseExpr(
+		t,
+		`recall tags[go,database]`,
+	)
+
+	record := Record{
+		"tags": []string{
+			"python",
+			"backend",
+		},
+	}
+
+	if EvaluateRecall(expr, record) {
+		t.Fatalf("expected false")
 	}
 }

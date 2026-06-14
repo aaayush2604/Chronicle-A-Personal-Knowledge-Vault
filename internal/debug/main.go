@@ -13,7 +13,10 @@ func main() {
 	input := `recall date < "2022" AND time>"13" OR contains[] AND type["imp"]`
 	scanner := lexer.NewScanner(input)
 
-	tokens := scanner.ScanTokens()
+	tokens, err := scanner.ScanTokens()
+	if err != nil {
+		fmt.Println(errorC.FormatError(err))
+	}
 
 	p := parser.NewParser(tokens)
 

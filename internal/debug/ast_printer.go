@@ -55,7 +55,7 @@ func (p *ASTPrinter) VisitContainsExpression(expr *parser.Contains) any {
 func (p *ASTPrinter) VisitTypeFilterExpression(expr *parser.TypeFilter) any {
 	var builder strings.Builder
 
-	builder.WriteString("( contains [")
+	builder.WriteString("( type [")
 	for i, str := range expr.Words {
 		builder.WriteString(str)
 		if i < len(expr.Words)-1 {
@@ -68,6 +68,20 @@ func (p *ASTPrinter) VisitTypeFilterExpression(expr *parser.TypeFilter) any {
 
 func (p *ASTPrinter) VisitLiteralExpression(expr *parser.Literal) any {
 	return fmt.Sprintf("%v", expr.Val.Lexeme)
+}
+
+func (p *ASTPrinter) VisitTagsExpression(expr *parser.Tags) any {
+	var builder strings.Builder
+
+	builder.WriteString("( tags [")
+	for i, str := range expr.TagList {
+		builder.WriteString(str)
+		if i < len(expr.TagList)-1 {
+			builder.WriteString(", ")
+		}
+	}
+	builder.WriteString("])")
+	return builder.String()
 }
 
 func (p *ASTPrinter) VisitAllExpression(expr *parser.All) any {

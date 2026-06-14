@@ -14,6 +14,7 @@ func EntryToRecord(e entry.KnowledgeEntry) Record {
 		"date":    e.Timestamp,
 		"len":     len(e.Content),
 		"type":    string(e.Type),
+		"tags":    e.Tags,
 	}
 }
 

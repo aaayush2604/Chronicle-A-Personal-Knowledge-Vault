@@ -95,7 +95,7 @@ func TestQueryTypeFilter(t *testing.T) {
 	)
 
 	results, err := eng.Query(
-		`recall type["note"]`,
+		`recall type[note]`,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -150,7 +150,7 @@ func TestQueryLogicalAnd(t *testing.T) {
 	)
 
 	results, err := eng.Query(
-		`recall contains["database"] and type["note"]`,
+		`recall contains["database"] and type[note]`,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -226,11 +226,11 @@ func TestDeletedEntriesNotReturnedAfterRestart(t *testing.T) {
 	}
 }
 
-func TestQueryNoteCommand(t *testing.T) {
+func TestQueryRemCommand(t *testing.T) {
 	eng := buildEngine(t)
 
 	results, err := eng.Query(
-		`note #go #database "hello world"`,
+		`rem #go #database "hello world"`,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -249,5 +249,110 @@ func TestQueryNoteCommand(t *testing.T) {
 
 	if len(results[0].Tags) != 2 {
 		t.Fatalf("expected two tags")
+	}
+}
+
+func TestQueryTags(t *testing.T) {
+	eng := buildEngine(t)
+
+	_, _ = eng.Query(
+		`rem #go "golang project"`,
+	)
+
+	_, _ = eng.Query(
+		`rem #python "python project"`,
+	)
+
+	results, err := eng.Query(
+		`recall tags[go]`,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(results) != 1 {
+		t.Fatalf(
+			"expected 1 result, got %d",
+			len(results),
+		)
+	}
+}
+
+func TestQueryTagsOr(t *testing.T) {
+	eng := buildEngine(t)
+
+	_, _ = eng.Query(
+		`rem #go "golang project"`,
+	)
+
+	_, _ = eng.Query(
+		`rem #database "sql project"`,
+	)
+
+	results, err := eng.Query(
+		`recall tags[go,database]`,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(results) != 2 {
+		t.Fatalf(
+			"expected 2 results, got %d",
+			len(results),
+		)
+	}
+}
+
+func TestRemDefaultType(t *testing.T) {
+	eng := buildEngine(t)
+
+	results, err := eng.Query(
+		`rem "hello world"`,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if results[0].Type != entry.TypeNote {
+		t.Fatalf("expected note type")
+	}
+}
+
+func TestRemLearningType(t *testing.T) {
+	eng := buildEngine(t)
+
+	results, err := eng.Query(
+		`rem learning "hello world"`,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if results[0].Type != entry.TypeLearning {
+		t.Fatalf("expected learning type")
+	}
+}
+
+func TestRemTags(t *testing.T) {
+	eng := buildEngine(t)
+
+	results, err := eng.Query(
+		`rem learning #go #database "hello world"`,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(results[0].Tags) != 2 {
+		t.Fatalf("expected two tags")
+	}
+
+	if results[0].Type != entry.TypeLearning {
+		t.Fatalf("expected learning type")
+	}
+
+	if results[0].Content != `"hello world" ` {
+		t.Fatalf("content mismatch")
 	}
 }

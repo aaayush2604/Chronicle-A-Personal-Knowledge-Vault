@@ -136,6 +136,19 @@ func (e *AstEvaluator) VisitLiteralExpression(expr *parser.Literal) any {
 	return nil
 }
 
+func (e *AstEvaluator) VisitTagsExpression(expr *parser.Tags) any {
+	eTags := e.record["tags"].([]string)
+	qTags := expr.TagList
+
+	for _, qT := range qTags {
+		if slices.Contains(eTags, qT) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (e *AstEvaluator) VisitAllExpression(expr *parser.All) any {
 	return true
 }
@@ -237,6 +250,6 @@ func EvaluatePayload(p parser.Payload) (any, any, any) {
 	return p.Accept(e)
 }
 
-func (e *PayloadEvaluator) VisitNotePayload(p *parser.NotePayload) (any, any, any) {
+func (e *PayloadEvaluator) VisitRemPayload(p *parser.RemPayload) (any, any, any) {
 	return p.Type, p.Tags, p.Content
 }

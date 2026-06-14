@@ -3,6 +3,7 @@ package terminal
 import (
 	"chronicle/internal/entry"
 	"fmt"
+	"strings"
 )
 
 func printEntries(entries []entry.KnowledgeEntry) {
@@ -15,11 +16,19 @@ func printEntries(entries []entry.KnowledgeEntry) {
 	for _, e := range entries {
 		// fmt.Printf("[%d] (%s) %s\n", e.ID, e.Type, e.Content)
 
+		var sb strings.Builder
+		for i, t := range e.Tags {
+			if i > 0 {
+				sb.WriteString(" ")
+			}
+			fmt.Fprintf(&sb, "#%s", t)
+		}
+
 		fmt.Printf(
-			"%s{%d}%s %s%s%s (%s)  [%s] \n\n",
+			"%s{%d}%s %s%s%s (%s)  [%s] %s \n\n",
 			fgGray, e.ID, reset,
 			colorForType(e.Type), e.Content, reset,
-			e.Type, e.Timestamp.Format("3:04 PM 02-01-2006"),
+			e.Type, e.Timestamp.Format("3:04 PM 02-01-2006"), sb.String(),
 		)
 
 		count++

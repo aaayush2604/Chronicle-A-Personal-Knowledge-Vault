@@ -20,7 +20,7 @@ func AnalyzeSemantics(q *parser.Query) error {
 	case parser.RecallCommand:
 		analyzer := &ExprSemanticAnalyzer{}
 		res = q.Expr.Accept(analyzer)
-	case parser.NoteCommand:
+	case parser.RemCommand:
 		analyzer := &PayloadSemanticAnalyzer{}
 		res, _, _ = q.Payload.Accept(analyzer)
 	}
@@ -143,11 +143,19 @@ func (s *ExprSemanticAnalyzer) VisitLiteralExpression(expr *parser.Literal) any 
 	return nil
 }
 
+func (s *ExprSemanticAnalyzer) VisitTagsExpression(expr *parser.Tags) any {
+	tags := expr.TagList
+	if len(tags) == 0 {
+		return errorC.New(errorC.Validation, "Empty Tags List Not Allowed")
+	}
+	return nil
+}
+
 func (s *ExprSemanticAnalyzer) VisitAllExpression(expr *parser.All) any {
 	return nil
 }
 
-func (s *PayloadSemanticAnalyzer) VisitNotePayload(payload *parser.NotePayload) (any, any, any) {
+func (s *PayloadSemanticAnalyzer) VisitRemPayload(payload *parser.RemPayload) (any, any, any) {
 	if payload.Type == "" {
 		return errorC.New(errorC.Validation, "No Entry Type Specified"), nil, nil
 	}

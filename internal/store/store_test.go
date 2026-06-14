@@ -296,10 +296,10 @@ func TestReplayPreservesTags(t *testing.T) {
 
 	tags := []*lexer.Token{
 		{
-			Lexeme: "go",
+			Literal: "go",
 		},
 		{
-			Lexeme: "database",
+			Literal: "database",
 		},
 	}
 

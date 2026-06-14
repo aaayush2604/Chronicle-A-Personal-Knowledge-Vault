@@ -13,10 +13,10 @@ func TestNewRecallType(t *testing.T) {
 	}
 }
 
-func TestNewNoteType(t *testing.T) {
-	n := NewNote(nil)
+func TestNewRemType(t *testing.T) {
+	n := NewRemember(nil)
 
-	if n.GetType() != NoteType {
-		t.Fatalf("expected note type")
+	if n.GetType() != RemType {
+		t.Fatalf("expected rem type")
 	}
 }

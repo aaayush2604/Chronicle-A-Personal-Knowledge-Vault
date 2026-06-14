@@ -103,8 +103,8 @@ func (p *Parser) parseQuery() (*Query, error) {
 	switch c.Lexeme {
 	case "recall":
 		cmd = RecallCommand
-	case "note":
-		cmd = NoteCommand
+	case "rem", "remember":
+		cmd = RemCommand
 	default:
 		err := errorC.New(errorC.Syntax, "Syntax Error: Query must begin with a command")
 		return nil, err
@@ -137,7 +137,7 @@ func (p *Parser) parseQuery() (*Query, error) {
 		queryNode.Expr = expr
 		return queryNode, nil
 
-	case NoteCommand:
+	case RemCommand:
 		payload, err := p.parsePayload()
 
 		if err != nil {
@@ -215,6 +215,12 @@ func (p *Parser) parseFactor() (Expr, error) {
 				return nil, errorC.Wrap(err, errorC.Syntax, "Error parsing Type Filter:")
 			}
 			return expr, nil
+		} else if p.matchLexeme("tags") {
+			expr, err := p.parseTags()
+			if err != nil {
+				return nil, errorC.Wrap(err, errorC.Syntax, "Error parsing Tags:")
+			}
+			return expr, nil
 		} else {
 			expr, err := p.parseComparison()
 			if err != nil {
@@ -264,17 +270,51 @@ func (p *Parser) parseContains() (Expr, error) {
 func (p *Parser) parseTypeFilter() (Expr, error) {
 
 	if !(p.checkTokenType(lexer.LBRACKET) && p.matchLexeme("[")) {
-		return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Error parsing TypeFilter StringList [ at col %d", p.peek().Position))
+		return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Error parsing Type List [ at col %d", p.peek().Position))
 	}
 
-	strings, err := p.parseStringList()
-	if err != nil {
-		return nil, errorC.Wrap(err, errorC.Syntax, "Error in parsing StringList:")
+	if p.checkTokenType(lexer.RBRACKET) && p.matchLexeme("]") {
+		return NewTypeFilter([]string{}), nil
 	}
-	expr := NewTypeFilter(strings)
+
+	var words []string
+	if !p.checkTokenType(lexer.ETYPE) {
+		return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Expected an Entry Type at col %d", p.peek().Position))
+	}
+
+	words = append(words, p.peek().Lexeme)
+	p.advance()
+
+	for p.checkTokenType(lexer.COMMA) {
+		p.advance()
+		if !p.checkTokenType(lexer.ETYPE) {
+			return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Expected an Entry Type or ] at col %d", p.peek().Position))
+		}
+		words = append(words, p.peek().Lexeme)
+		p.advance()
+	}
+	expr := NewTypeFilter(words)
 
 	if !(p.checkTokenType(lexer.RBRACKET) && p.matchLexeme("]")) {
 		return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Error parsing TypeFilter StringList ] at col %d", p.peek().Position))
+	}
+
+	return expr, nil
+}
+
+func (p *Parser) parseTags() (Expr, error) {
+	if !(p.checkTokenType(lexer.LBRACKET) && p.matchLexeme("[")) {
+		return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Error parsing Tags List [ at col %d", p.peek().Position))
+	}
+
+	strings, err := p.parseWordList()
+	if err != nil {
+		return nil, errorC.Wrap(err, errorC.Syntax, "Error in parsing StringList:")
+	}
+	expr := NewTags(strings)
+
+	if !(p.checkTokenType(lexer.RBRACKET) && p.matchLexeme("]")) {
+		return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Error parsing Tags List ] at col %d", p.peek().Position))
 	}
 
 	return expr, nil
@@ -299,6 +339,30 @@ func (p *Parser) parseStringList() ([]string, error) {
 			return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Expected a String or ] at col %d", p.peek().Position))
 		}
 		words = append(words, p.peek().Literal.(string))
+		p.advance()
+	}
+	return words, nil
+}
+
+func (p *Parser) parseWordList() ([]string, error) {
+	if p.checkTokenType(lexer.RBRACKET) {
+		return []string{}, nil
+	}
+
+	var words []string
+	if !p.checkTokenType(lexer.IDENTIFIER) {
+		return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Expected an Identifier at col %d", p.peek().Position))
+	}
+
+	words = append(words, p.peek().Lexeme)
+	p.advance()
+
+	for p.checkTokenType(lexer.COMMA) {
+		p.advance()
+		if !p.checkTokenType(lexer.IDENTIFIER) {
+			return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Expected an Identifier or ] at col %d", p.peek().Position))
+		}
+		words = append(words, p.peek().Lexeme)
 		p.advance()
 	}
 	return words, nil
@@ -330,6 +394,8 @@ func (p *Parser) parsePayload() (Payload, error) {
 	eType := entry.TypeNote
 	if p.checkTokenType(lexer.ETYPE) {
 		switch p.peek().Lexeme {
+		case "n", "note":
+			eType = entry.TypeNote
 		case "l", "learning":
 			eType = entry.TypeLearning
 		case "q", "question":
@@ -358,7 +424,7 @@ func (p *Parser) parsePayload() (Payload, error) {
 		p.advance()
 	}
 
-	return &NotePayload{
+	return &RemPayload{
 		Type:    eType,
 		Tags:    tags,
 		Content: content,

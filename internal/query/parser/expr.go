@@ -9,7 +9,7 @@ type CommandType string
 
 const (
 	RecallCommand CommandType = "recall"
-	NoteCommand   CommandType = "note"
+	RemCommand    CommandType = "remember"
 )
 
 type ExprVisitor interface {
@@ -19,11 +19,12 @@ type ExprVisitor interface {
 	VisitTypeFilterExpression(*TypeFilter) any
 	VisitGroupingExpression(*Grouping) any
 	VisitLiteralExpression(*Literal) any
+	VisitTagsExpression(*Tags) any
 	VisitAllExpression(*All) any
 }
 
 type PayloadVisitor interface {
-	VisitNotePayload(*NotePayload) (any, any, any)
+	VisitRemPayload(*RemPayload) (any, any, any)
 }
 
 type Expr interface {
@@ -146,6 +147,22 @@ func (l *Literal) Accept(v ExprVisitor) any {
 	return v.VisitLiteralExpression(l)
 }
 
+type Tags struct {
+	TagList []string
+}
+
+func NewTags(tags []string) *Tags {
+	return &Tags{
+		TagList: tags,
+	}
+}
+
+func (t *Tags) exprNode() {}
+
+func (t *Tags) Accept(v ExprVisitor) any {
+	return v.VisitTagsExpression(t)
+}
+
 type All struct{}
 
 func (a *All) exprNode() {}
@@ -154,14 +171,14 @@ func (a *All) Accept(v ExprVisitor) any {
 	return v.VisitAllExpression(a)
 }
 
-type NotePayload struct {
+type RemPayload struct {
 	Type    entry.EntryType
 	Tags    []*lexer.Token
 	Content []*lexer.Token
 }
 
-func (n *NotePayload) payloadNode() {}
+func (n *RemPayload) payloadNode() {}
 
-func (n *NotePayload) Accept(v PayloadVisitor) (any, any, any) {
-	return v.VisitNotePayload(n)
+func (n *RemPayload) Accept(v PayloadVisitor) (any, any, any) {
+	return v.VisitRemPayload(n)
 }

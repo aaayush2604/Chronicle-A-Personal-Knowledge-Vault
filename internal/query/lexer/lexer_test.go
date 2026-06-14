@@ -5,7 +5,10 @@ import "testing"
 func TestScanRecallCommand(t *testing.T) {
 	scanner := NewScanner(`recall all`)
 
-	tokens := scanner.ScanTokens()
+	tokens, err := scanner.ScanTokens()
+	if err != nil {
+		t.Fatalf("%s", err.Error())
+	}
 
 	if len(tokens) != 3 {
 		t.Fatalf("expected 3 tokens, got %d", len(tokens))
@@ -27,7 +30,10 @@ func TestScanRecallCommand(t *testing.T) {
 func TestScanStringLiteral(t *testing.T) {
 	scanner := NewScanner(`"hello world"`)
 
-	tokens := scanner.ScanTokens()
+	tokens, err := scanner.ScanTokens()
+	if err != nil {
+		t.Fatalf("%s", err.Error())
+	}
 
 	if tokens[0].TokenType != STRING {
 		t.Fatalf("expected STRING token")
@@ -41,7 +47,10 @@ func TestScanStringLiteral(t *testing.T) {
 func TestScanNumberLiteral(t *testing.T) {
 	scanner := NewScanner(`123`)
 
-	tokens := scanner.ScanTokens()
+	tokens, err := scanner.ScanTokens()
+	if err != nil {
+		t.Fatalf("%s", err.Error())
+	}
 
 	if tokens[0].TokenType != NUMBER {
 		t.Fatalf("expected NUMBER token")
@@ -55,7 +64,10 @@ func TestScanNumberLiteral(t *testing.T) {
 func TestScanDecimalNumber(t *testing.T) {
 	scanner := NewScanner(`12.5`)
 
-	tokens := scanner.ScanTokens()
+	tokens, err := scanner.ScanTokens()
+	if err != nil {
+		t.Fatalf("%s", err.Error())
+	}
 
 	if tokens[0].TokenType != NUMBER {
 		t.Fatalf("expected NUMBER token")
@@ -69,7 +81,10 @@ func TestScanDecimalNumber(t *testing.T) {
 func TestScanLogicalOperators(t *testing.T) {
 	scanner := NewScanner(`AND OR`)
 
-	tokens := scanner.ScanTokens()
+	tokens, err := scanner.ScanTokens()
+	if err != nil {
+		t.Fatalf("%s", err.Error())
+	}
 
 	if tokens[0].TokenType != LOGICAL {
 		t.Fatalf("expected LOGICAL")
@@ -93,7 +108,10 @@ func TestScanComparisonOperators(t *testing.T) {
 	for _, input := range tests {
 		scanner := NewScanner(input)
 
-		tokens := scanner.ScanTokens()
+		tokens, err := scanner.ScanTokens()
+		if err != nil {
+			t.Fatalf("%s", err.Error())
+		}
 
 		if tokens[0].TokenType != OPERATOR {
 			t.Fatalf("expected OPERATOR for %s", input)
@@ -104,7 +122,10 @@ func TestScanComparisonOperators(t *testing.T) {
 func TestScanBrackets(t *testing.T) {
 	scanner := NewScanner(`[]()`)
 
-	tokens := scanner.ScanTokens()
+	tokens, err := scanner.ScanTokens()
+	if err != nil {
+		t.Fatalf("%s", err.Error())
+	}
 
 	expected := []TokenType{
 		LBRACKET,
@@ -133,7 +154,10 @@ func TestScanBrackets(t *testing.T) {
 func TestScanIdentifier(t *testing.T) {
 	scanner := NewScanner(`contains`)
 
-	tokens := scanner.ScanTokens()
+	tokens, err := scanner.ScanTokens()
+	if err != nil {
+		t.Fatalf("%s", err.Error())
+	}
 
 	if tokens[0].TokenType != IDENTIFIER {
 		t.Fatalf("expected IDENTIFIER")
@@ -143,7 +167,10 @@ func TestScanIdentifier(t *testing.T) {
 func TestScanCaseInsensitiveKeywords(t *testing.T) {
 	scanner := NewScanner(`ReCaLl AnD Or AlL`)
 
-	tokens := scanner.ScanTokens()
+	tokens, err := scanner.ScanTokens()
+	if err != nil {
+		t.Fatalf("%s", err.Error())
+	}
 
 	expected := []TokenType{
 		COMMAND,
@@ -169,7 +196,10 @@ func TestScanComplexQuery(t *testing.T) {
 		`recall date >= "2025" AND type["note"]`,
 	)
 
-	tokens := scanner.ScanTokens()
+	tokens, err := scanner.ScanTokens()
+	if err != nil {
+		t.Fatalf("%s", err.Error())
+	}
 
 	if len(tokens) == 0 {
 		t.Fatalf("expected tokens")
@@ -177,5 +207,94 @@ func TestScanComplexQuery(t *testing.T) {
 
 	if tokens[len(tokens)-1].TokenType != EOF {
 		t.Fatalf("expected EOF")
+	}
+}
+
+func TestScanRemCommand(t *testing.T) {
+	scanner := NewScanner(`rem hello`)
+
+	tokens, err := scanner.ScanTokens()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if tokens[0].TokenType != COMMAND {
+		t.Fatalf("expected COMMAND")
+	}
+}
+
+func TestScanRememberCommand(t *testing.T) {
+	scanner := NewScanner(`remember hello`)
+
+	tokens, err := scanner.ScanTokens()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if tokens[0].TokenType != COMMAND {
+		t.Fatalf("expected COMMAND")
+	}
+}
+
+func TestScanNoteEntryType(t *testing.T) {
+	scanner := NewScanner(`note`)
+
+	tokens, err := scanner.ScanTokens()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if tokens[0].TokenType != ETYPE {
+		t.Fatalf("expected ETYPE")
+	}
+}
+
+func TestScanNoteAlias(t *testing.T) {
+	scanner := NewScanner(`n`)
+
+	tokens, err := scanner.ScanTokens()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if tokens[0].TokenType != ETYPE {
+		t.Fatalf("expected ETYPE")
+	}
+}
+
+func TestScanTag(t *testing.T) {
+	scanner := NewScanner(`#golang`)
+
+	tokens, err := scanner.ScanTokens()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if tokens[0].TokenType != TAG {
+		t.Fatalf("expected TAG")
+	}
+
+	if tokens[0].Literal.(string) != "golang" {
+		t.Fatalf("expected golang")
+	}
+}
+
+func TestInvalidDoubleHashTag(t *testing.T) {
+	scanner := NewScanner(`##go`)
+
+	_, err := scanner.ScanTokens()
+
+	if err == nil {
+		t.Fatalf("expected error")
+	}
+}
+
+func TestUnterminatedString(t *testing.T) {
+	scanner := NewScanner(`"hello`)
+
+	_, err := scanner.ScanTokens()
+
+	if err == nil {
+		t.Fatalf("expected error")
 	}
 }

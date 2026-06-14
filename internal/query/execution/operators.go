@@ -11,7 +11,7 @@ type CmdOperatorType string
 
 const (
 	RecallType CmdOperatorType = "recall"
-	NoteType   CmdOperatorType = "note"
+	RemType    CmdOperatorType = "remember"
 )
 
 // execution pipeline operators
@@ -159,36 +159,36 @@ func (this *Recall) Write(context *ExecContext) (entry.KnowledgeEntry, error) {
 	return entry.KnowledgeEntry{}, nil
 }
 
-type Note struct {
+type Remember struct {
 	cmdType CmdOperatorType
 	payload parser.Payload
 }
 
-func NewNote(p parser.Payload) *Note {
-	return &Note{
-		cmdType: NoteType,
+func NewRemember(p parser.Payload) *Remember {
+	return &Remember{
+		cmdType: RemType,
 		payload: p,
 	}
 }
 
-func (this *Note) GetType() CmdOperatorType {
+func (this *Remember) GetType() CmdOperatorType {
 	return this.cmdType
 }
 
-func (this *Note) Setup(context *ExecContext) error {
+func (this *Remember) Setup(context *ExecContext) error {
 	return nil
 }
 
-func (this *Note) Free(context *ExecContext) error {
+func (this *Remember) Free(context *ExecContext) error {
 	this.payload = nil
 	return nil
 }
 
-func (this *Note) Next(context *ExecContext) (entry.KnowledgeEntry, bool, error) {
+func (this *Remember) Next(context *ExecContext) (entry.KnowledgeEntry, bool, error) {
 	return entry.KnowledgeEntry{}, false, nil
 }
 
-func (this *Note) Write(context *ExecContext) (entry.KnowledgeEntry, error) {
+func (this *Remember) Write(context *ExecContext) (entry.KnowledgeEntry, error) {
 	eType, tags, content := EvaluatePayload(this.payload)
 
 	e, err := context.Store.Add(TokensToString(content.([]*lexer.Token)), tags.([]*lexer.Token), eType.(entry.EntryType))
@@ -203,8 +203,8 @@ func GetExecutionRoot(expr *parser.Query) Cmd {
 	switch expr.Command {
 	case parser.RecallCommand:
 		return NewRecall(expr.Expr)
-	case parser.NoteCommand:
-		return NewNote(expr.Payload)
+	case parser.RemCommand:
+		return NewRemember(expr.Payload)
 	default:
 		return nil
 	}

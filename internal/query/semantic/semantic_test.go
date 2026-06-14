@@ -10,7 +10,7 @@ func parseForSemantic(t *testing.T, input string) *parser.Query {
 	t.Helper()
 
 	scanner := lexer.NewScanner(input)
-	tokens := scanner.ScanTokens()
+	tokens, err := scanner.ScanTokens()
 
 	p := parser.NewParser(tokens)
 
@@ -69,7 +69,7 @@ func TestValidContains(t *testing.T) {
 func TestValidTypeFilter(t *testing.T) {
 	q := parseForSemantic(
 		t,
-		`recall type["note"]`,
+		`recall type[note]`,
 	)
 
 	if err := AnalyzeSemantics(q); err != nil {
@@ -185,5 +185,29 @@ func TestValidGroupedExpression(t *testing.T) {
 
 	if err := AnalyzeSemantics(q); err != nil {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestEmptyTags(t *testing.T) {
+	q := parseForSemantic(
+		t,
+		`recall tags[]`,
+	)
+
+	err := AnalyzeSemantics(q)
+
+	if err == nil {
+		t.Fatalf("expected semantic error")
+	}
+}
+
+func TestValidTags(t *testing.T) {
+	q := parseForSemantic(
+		t,
+		`recall tags[go]`,
+	)
+
+	if err := AnalyzeSemantics(q); err != nil {
+		t.Fatalf("unexpected error")
 	}
 }

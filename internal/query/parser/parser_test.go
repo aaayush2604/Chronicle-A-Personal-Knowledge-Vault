@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"chronicle/internal/entry"
 	"chronicle/internal/query/lexer"
 	"testing"
 )
@@ -9,7 +10,7 @@ func parseQuery(t *testing.T, input string) *Query {
 	t.Helper()
 
 	scanner := lexer.NewScanner(input)
-	tokens := scanner.ScanTokens()
+	tokens, err := scanner.ScanTokens()
 
 	p := NewParser(tokens)
 
@@ -52,7 +53,7 @@ func TestParseContains(t *testing.T) {
 func TestParseTypeFilter(t *testing.T) {
 	q := parseQuery(
 		t,
-		`recall type["note","idea"]`,
+		`recall type[note,idea]`,
 	)
 
 	expr, ok := q.Expr.(*TypeFilter)
@@ -126,11 +127,11 @@ func TestParseGrouping(t *testing.T) {
 
 func TestParseMissingRecall(t *testing.T) {
 	scanner := lexer.NewScanner(`len > 10`)
-	tokens := scanner.ScanTokens()
+	tokens, err := scanner.ScanTokens()
 
 	p := NewParser(tokens)
 
-	_, err := p.Parse()
+	_, err = p.Parse()
 
 	if err == nil {
 		t.Fatalf("expected parse error")
@@ -142,11 +143,11 @@ func TestParseInvalidGrouping(t *testing.T) {
 		`recall (len > 10`,
 	)
 
-	tokens := scanner.ScanTokens()
+	tokens, err := scanner.ScanTokens()
 
 	p := NewParser(tokens)
 
-	_, err := p.Parse()
+	_, err = p.Parse()
 
 	if err == nil {
 		t.Fatalf("expected parse error")
@@ -158,11 +159,11 @@ func TestParseContainsWithoutBracket(t *testing.T) {
 		`recall contains "go"`,
 	)
 
-	tokens := scanner.ScanTokens()
+	tokens, err := scanner.ScanTokens()
 
 	p := NewParser(tokens)
 
-	_, err := p.Parse()
+	_, err = p.Parse()
 
 	if err == nil {
 		t.Fatalf("expected parse error")
@@ -174,11 +175,11 @@ func TestParseComparisonWithoutValue(t *testing.T) {
 		`recall len >`,
 	)
 
-	tokens := scanner.ScanTokens()
+	tokens, err := scanner.ScanTokens()
 
 	p := NewParser(tokens)
 
-	_, err := p.Parse()
+	_, err = p.Parse()
 
 	if err == nil {
 		t.Fatalf("expected parse error")
@@ -204,13 +205,93 @@ func TestAndHasHigherPrecedenceThanOr(t *testing.T) {
 	}
 }
 
-func TestParseNoteCommand(t *testing.T) {
+func TestParseRemCommand(t *testing.T) {
 	q := parseQuery(
 		t,
-		`note #go #database "hello world"`,
+		`rem #go #database "hello world"`,
 	)
 
-	if q.Command != NoteCommand {
+	if q.Command != RemCommand {
 		t.Fatalf("expected note command")
+	}
+}
+
+func TestParseTags(t *testing.T) {
+	q := parseQuery(
+		t,
+		`recall tags[go,database]`,
+	)
+
+	expr, ok := q.Expr.(*Tags)
+
+	if !ok {
+		t.Fatalf("expected Tags expression")
+	}
+
+	if len(expr.TagList) != 2 {
+		t.Fatalf("expected 2 tags")
+	}
+}
+
+func TestParseEmptyTags(t *testing.T) {
+	q := parseQuery(
+		t,
+		`recall tags[]`,
+	)
+
+	_, ok := q.Expr.(*Tags)
+
+	if !ok {
+		t.Fatalf("expected Tags expression")
+	}
+}
+
+func TestParseRememberCommand(t *testing.T) {
+	q := parseQuery(
+		t,
+		`remember #go hello`,
+	)
+
+	if q.Command != RemCommand {
+		t.Fatalf("expected remember command")
+	}
+}
+
+func TestParseRemDefaultType(t *testing.T) {
+	q := parseQuery(
+		t,
+		`rem hello world`,
+	)
+
+	payload := q.Payload.(*RemPayload)
+
+	if payload.Type != entry.TypeNote {
+		t.Fatalf("expected default note type")
+	}
+}
+
+func TestParseRemLearningType(t *testing.T) {
+	q := parseQuery(
+		t,
+		`rem learning hello`,
+	)
+
+	payload := q.Payload.(*RemPayload)
+
+	if payload.Type != entry.TypeLearning {
+		t.Fatalf("expected learning type")
+	}
+}
+
+func TestParseRemLearningAlias(t *testing.T) {
+	q := parseQuery(
+		t,
+		`rem l hello`,
+	)
+
+	payload := q.Payload.(*RemPayload)
+
+	if payload.Type != entry.TypeLearning {
+		t.Fatalf("expected learning type")
 	}
 }

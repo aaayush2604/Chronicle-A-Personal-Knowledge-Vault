@@ -22,7 +22,10 @@ func (e *Engine) Query(input string) ([]entry.KnowledgeEntry, error) {
 	var res []entry.KnowledgeEntry
 	scanner := lexer.NewScanner(input)
 
-	tokens := scanner.ScanTokens()
+	tokens, err := scanner.ScanTokens()
+	if err != nil {
+		return nil, errorC.Wrap(err, errorC.Syntax, "Error in Query:")
+	}
 
 	p := parser.NewParser(tokens)
 
@@ -61,7 +64,7 @@ func (e *Engine) Query(input string) ([]entry.KnowledgeEntry, error) {
 			}
 			res = append(res, e)
 		}
-	case queryExec.NoteType:
+	case queryExec.RemType:
 		e, err := rootOperator.Write(eContext)
 		if err != nil {
 			return nil, errorC.Wrap(err, errorC.Execution, "Error in Query:")

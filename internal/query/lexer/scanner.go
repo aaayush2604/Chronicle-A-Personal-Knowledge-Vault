@@ -20,15 +20,18 @@ func NewScanner(src string) *Scanner {
 	}
 }
 
-func (s *Scanner) ScanTokens() []*Token {
+func (s *Scanner) ScanTokens() ([]*Token, error) {
 	for !s.isAtEnd() {
 		s.start = s.current
-		s.scanToken()
+		err := s.scanToken()
+		if err != nil {
+			return []*Token{}, err
+		}
 	}
 
 	endToken := NewToken(EOF, "", nil, 0)
 	s.tokens = append(s.tokens, endToken)
-	return s.tokens
+	return s.tokens, nil
 }
 
 func (s *Scanner) isAtEnd() bool {
@@ -75,27 +78,27 @@ func (s *Scanner) peekNext() byte {
 	return s.source[s.current+1]
 }
 
-func (s *Scanner) addString() {
+func (s *Scanner) addString() error {
 	for !(s.peek() == '"') && !s.isAtEnd() {
 		s.advance()
 	}
 	if s.isAtEnd() {
 		err := errorC.New(errorC.Validation, fmt.Sprintf("Unterminated String at col %d", s.current))
-		fmt.Println(err.Error())
-		return
+		return err
 	}
 
 	s.advance()
 
 	value := s.source[s.start+1 : s.current-1]
 	s.addTokenLiteral(STRING, value)
+	return nil
 }
 
 func (s *Scanner) isDigit(c byte) bool {
 	return c >= '0' && c <= '9'
 }
 
-func (s *Scanner) addNumber() {
+func (s *Scanner) addNumber() error {
 	for s.isDigit(s.peek()) {
 		s.advance()
 	}
@@ -108,9 +111,10 @@ func (s *Scanner) addNumber() {
 	value, err := strconv.ParseFloat(s.source[s.start:s.current], 64)
 	if err != nil {
 		e := errorC.New(errorC.Validation, fmt.Sprintf("Unable to parse Numeric Literal at col %d", s.current))
-		fmt.Println(e.Error())
+		return e
 	}
 	s.addTokenLiteral(NUMBER, value)
+	return nil
 }
 
 func (s *Scanner) isAlpha(c byte) bool {
@@ -121,7 +125,7 @@ func (s *Scanner) isAlphaNumeric(c byte) bool {
 	return s.isAlpha(c) || s.isDigit(c)
 }
 
-func (s *Scanner) addIdentifier() {
+func (s *Scanner) addIdentifier() error {
 	for s.isAlphaNumeric(s.peek()) {
 		s.advance()
 	}
@@ -131,17 +135,22 @@ func (s *Scanner) addIdentifier() {
 		tType = IDENTIFIER
 	}
 	s.addToken(tType)
+	return nil
 }
 
-func (s *Scanner) addTag() {
+func (s *Scanner) addTag() error {
+	if s.peek() == '#' {
+		return errorC.New(errorC.Validation, fmt.Sprintf("Unexpected '#' at col %d", s.current))
+	}
 	for s.isAlphaNumeric(s.peek()) {
 		s.advance()
 	}
 	tagText := strings.ToLower(s.source[s.start+1 : s.current])
 	s.addTokenLiteral(TAG, tagText)
+	return nil
 }
 
-func (s *Scanner) scanToken() {
+func (s *Scanner) scanToken() error {
 	c := s.advance()
 	switch c {
 	case '[':
@@ -183,30 +192,42 @@ func (s *Scanner) scanToken() {
 
 			if s.isAtEnd() {
 				err := errorC.New(errorC.NotFound, "Unterminated comment")
-				fmt.Println(err.Error())
-				return
+				return err
 			}
 
 			s.advance()
 			s.advance()
 		} else {
 			err := errorC.New(errorC.NotFound, "Unterminated comment")
-			fmt.Println(err.Error())
+			return err
 		}
 	case '"':
-		s.addString()
+		err := s.addString()
+		if err != nil {
+			return errorC.Wrap(err, errorC.Syntax, "Error parsing Query: ")
+		}
 	case '#':
-		s.addTag()
+		err := s.addTag()
+		if err != nil {
+			return errorC.Wrap(err, errorC.Syntax, "Error parsing Query: ")
+		}
 	case ' ', '\r', '\t', '\n':
-		return
+		return nil
 	default:
 		if s.isDigit(c) {
-			s.addNumber()
+			err := s.addNumber()
+			if err != nil {
+				return errorC.Wrap(err, errorC.Syntax, "Error parsing Query: ")
+			}
 		} else if s.isAlpha((c)) {
-			s.addIdentifier()
+			err := s.addIdentifier()
+			if err != nil {
+				return errorC.Wrap(err, errorC.Syntax, "Error parsing Query: ")
+			}
 		} else {
 			err := errorC.New(errorC.NotFound, "Unexpected Character")
-			fmt.Println(err.Error())
+			return err
 		}
 	}
+	return nil
 }
