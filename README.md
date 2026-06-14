@@ -8,36 +8,185 @@ Just building a personal project allowing me to note down my thoughts into diffe
 
 I have added a basic query Language to this, allowing you to query your notes based on the words an entry contains, the entry's type and what date or time the entry was made. I am yet to enter a testing phase, so you might see a lot of bugs, kindly let me know by raising a pr, on the bugs.md
 
-Here is a basic user manual
+# User Manual
 
-Use `recall` to search your notes with simple query expressions.
+## Remembering Entries
+
+Use `rem` or `remember` to add new entries.
+
+```bash
+rem [type] [#tags...] <text>
+remember [type] [#tags...] <text>
+```
+
+Supported entry types:
+
+- `note` (`n`)
+- `idea` (`i`)
+- `question` (`q`)
+- `learning` (`l`)
+- `important` (`imp`)
+
+If no type is specified, the entry is stored as a note.
+
+### Examples
+
+```bash
+rem "Read chapter 3"
+
+rem learning "Definition of uniform convergence"
+
+rem idea #project #go "Use an append-only log"
+
+remember question #math "Why does this proof work?"
+```
+
+---
+
+## Recall
+
+Use `recall` to search your entries using query expressions.
 
 ```bash
 recall <predicate> AND/OR <predicate> ...
 ```
 
-Supported Fields
+**Note:** `AND` has higher precedence than `OR`.
 
-date, time, type, contains
+---
 
-Operators
+## Supported Predicates
 
-=, !=, >, <, >=, <=, AND, OR (Keep in mind AND is more binding than OR)
+- `all`
+- `contains[...]`
+- `type[...]`
+- `tags[...]`
+- `date`
+- `time`
+- `len`
 
-Examples
+---
+
+## Operators
+
+Comparison operators:
+
+```text
+=    !=    >    <    >=    <=
+```
+
+Logical operators:
+
+```text
+AND    OR
+```
+
+---
+
+## List Semantics
+
+The following predicates accept lists:
+
+- `contains[...]`
+- `type[...]`
+- `tags[...]`
+
+Lists use **OR semantics**.
+
+For example:
+
+```bash
+type[note,idea]
+tags[go,database]
+contains["ml","project"]
+```
+
+match entries satisfying **any one** of the values.
+
+To require multiple conditions, use `AND`:
+
+```bash
+tags[go] AND tags[database]
+
+contains["ml"] AND contains["project"]
+```
+
+---
+
+## Examples
+
+Return all entries:
+
+```bash
+recall all
+```
+
+Filter by type:
+
+```bash
+recall type[note]
+
+recall type[note,idea]
+```
+
+Filter by tags:
+
+```bash
+recall tags[go]
+
+recall tags[go,database]
+```
+
+Search contents:
+
+```bash
+recall contains["project"]
+
+recall contains["ml","project"]
+```
+
+Date and time queries:
 
 ```bash
 recall time > "7 PM"
+
 recall date >= "2026-04-01"
 
-recall type["imp","note"]              # matches any
-recall contains ["ml","project"]       # must contain all
-
-recall time > "7 PM" AND type["note"]
-recall date >= "2026-04-01" AND contains ["project"]
-
+recall len > 100
 ```
 
-Formats
-Time: "7 PM", "07:30 PM", "19:30", "11:00"
-Date: "2026-04-10", "10/04/2026"
+Combine predicates:
+
+```bash
+recall time > "7 PM" AND type[note]
+
+recall date >= "2026-04-01" AND contains["project"]
+
+recall tags[go] AND contains["database"]
+
+recall type[note,idea] OR tags[important]
+```
+
+---
+
+## Time Formats
+
+Accepted formats:
+
+```text
+"7 PM"
+"07:30 PM"
+"19:30"
+"11:00"
+```
+
+---
+
+## Date Formats
+
+Accepted formats:
+
+```text
+"2026-04-10"
+"10/04/2026"
+```
