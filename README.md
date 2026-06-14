@@ -15,8 +15,8 @@ I have added a basic query Language to this, allowing you to query your notes ba
 Use `rem` or `remember` to add new entries.
 
 ```bash
-rem [type] [#tags...] <text>
-remember [type] [#tags...] <text>
+rem [@type] [#tags...] <text>
+remember [@type] [#tags...] <text>
 ```
 
 Supported entry types:
@@ -34,11 +34,11 @@ If no type is specified, the entry is stored as a note.
 ```bash
 rem "Read chapter 3"
 
-rem learning "Definition of uniform convergence"
+rem @learning "Definition of uniform convergence"
 
-rem idea #project #go "Use an append-only log"
+rem @idea #project #go "Use an append-only log"
 
-remember question #math "Why does this proof work?"
+remember @question #math "Why does this proof work?"
 ```
 
 ---

@@ -8,8 +8,8 @@ func printHelp(version string) {
 
 	// ---------------- WRITING ----------------
 	fmt.Println(bold + "Remembering" + reset)
-	fmt.Println("  rem [type] [#tags...] <text>")
-	fmt.Println("  remember [type] [#tags...] <text>")
+	fmt.Println("  rem [@type] [#tags...] <text>")
+	fmt.Println("  remember [@type] [#tags...] <text>")
 	fmt.Println()
 	fmt.Println("  Types:")
 	fmt.Println("    note (n)")
@@ -20,8 +20,8 @@ func printHelp(version string) {
 	fmt.Println()
 	fmt.Println("  Examples:")
 	fmt.Println("    rem \"Read chapter 3\"")
-	fmt.Println("    rem learning #math #analysis \"Uniform convergence theorem\"")
-	fmt.Println("    remember idea #project \"Use an append-only log\"")
+	fmt.Println("    rem @learning #math #analysis \"Uniform convergence theorem\"")
+	fmt.Println("    remember @idea #project \"Use an append-only log\"")
 	fmt.Println()
 
 	// ---------------- RECALL ----------------

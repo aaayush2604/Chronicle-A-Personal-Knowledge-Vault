@@ -323,7 +323,7 @@ func TestRemLearningType(t *testing.T) {
 	eng := buildEngine(t)
 
 	results, err := eng.Query(
-		`rem learning "hello world"`,
+		`rem @learning "hello world"`,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -338,7 +338,7 @@ func TestRemTags(t *testing.T) {
 	eng := buildEngine(t)
 
 	results, err := eng.Query(
-		`rem learning #go #database "hello world"`,
+		`rem @learning #go #database "hello world"`,
 	)
 	if err != nil {
 		t.Fatal(err)

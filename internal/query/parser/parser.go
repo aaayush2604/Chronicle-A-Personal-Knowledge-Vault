@@ -268,35 +268,18 @@ func (p *Parser) parseContains() (Expr, error) {
 }
 
 func (p *Parser) parseTypeFilter() (Expr, error) {
-
 	if !(p.checkTokenType(lexer.LBRACKET) && p.matchLexeme("[")) {
 		return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Error parsing Type List [ at col %d", p.peek().Position))
 	}
 
-	if p.checkTokenType(lexer.RBRACKET) && p.matchLexeme("]") {
-		return NewTypeFilter([]string{}), nil
+	strings, err := p.parseWordList()
+	if err != nil {
+		return nil, errorC.Wrap(err, errorC.Syntax, "Error in parsing Type List:")
 	}
-
-	var words []string
-	if !p.checkTokenType(lexer.ETYPE) {
-		return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Expected an Entry Type at col %d", p.peek().Position))
-	}
-
-	words = append(words, p.peek().Lexeme)
-	p.advance()
-
-	for p.checkTokenType(lexer.COMMA) {
-		p.advance()
-		if !p.checkTokenType(lexer.ETYPE) {
-			return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Expected an Entry Type or ] at col %d", p.peek().Position))
-		}
-		words = append(words, p.peek().Lexeme)
-		p.advance()
-	}
-	expr := NewTypeFilter(words)
+	expr := NewTypeFilter(strings)
 
 	if !(p.checkTokenType(lexer.RBRACKET) && p.matchLexeme("]")) {
-		return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Error parsing TypeFilter StringList ] at col %d", p.peek().Position))
+		return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Error parsing Type List ] at col %d", p.peek().Position))
 	}
 
 	return expr, nil
@@ -309,7 +292,7 @@ func (p *Parser) parseTags() (Expr, error) {
 
 	strings, err := p.parseWordList()
 	if err != nil {
-		return nil, errorC.Wrap(err, errorC.Syntax, "Error in parsing StringList:")
+		return nil, errorC.Wrap(err, errorC.Syntax, "Error in parsing Tags List:")
 	}
 	expr := NewTags(strings)
 
@@ -393,7 +376,7 @@ func (p *Parser) parseComparison() (Expr, error) {
 func (p *Parser) parsePayload() (Payload, error) {
 	eType := entry.TypeNote
 	if p.checkTokenType(lexer.ETYPE) {
-		switch p.peek().Lexeme {
+		switch p.peek().Literal.(string) {
 		case "n", "note":
 			eType = entry.TypeNote
 		case "l", "learning":

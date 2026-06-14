@@ -269,29 +269,3 @@ func TestParseRemDefaultType(t *testing.T) {
 		t.Fatalf("expected default note type")
 	}
 }
-
-func TestParseRemLearningType(t *testing.T) {
-	q := parseQuery(
-		t,
-		`rem learning hello`,
-	)
-
-	payload := q.Payload.(*RemPayload)
-
-	if payload.Type != entry.TypeLearning {
-		t.Fatalf("expected learning type")
-	}
-}
-
-func TestParseRemLearningAlias(t *testing.T) {
-	q := parseQuery(
-		t,
-		`rem l hello`,
-	)
-
-	payload := q.Payload.(*RemPayload)
-
-	if payload.Type != entry.TypeLearning {
-		t.Fatalf("expected learning type")
-	}
-}

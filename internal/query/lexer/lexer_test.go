@@ -236,32 +236,6 @@ func TestScanRememberCommand(t *testing.T) {
 	}
 }
 
-func TestScanNoteEntryType(t *testing.T) {
-	scanner := NewScanner(`note`)
-
-	tokens, err := scanner.ScanTokens()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if tokens[0].TokenType != ETYPE {
-		t.Fatalf("expected ETYPE")
-	}
-}
-
-func TestScanNoteAlias(t *testing.T) {
-	scanner := NewScanner(`n`)
-
-	tokens, err := scanner.ScanTokens()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if tokens[0].TokenType != ETYPE {
-		t.Fatalf("expected ETYPE")
-	}
-}
-
 func TestScanTag(t *testing.T) {
 	scanner := NewScanner(`#golang`)
 

@@ -150,6 +150,19 @@ func (s *Scanner) addTag() error {
 	return nil
 }
 
+func (s *Scanner) addType() error {
+	if s.peek() == '@' {
+		return errorC.New(errorC.Validation, fmt.Sprintf("Unexpected '@' at col %d", s.current))
+	}
+
+	for s.isAlphaNumeric(s.peek()) {
+		s.advance()
+	}
+	eTypeText := strings.ToLower(s.source[s.start+1 : s.current])
+	s.addTokenLiteral(ETYPE, eTypeText)
+	return nil
+}
+
 func (s *Scanner) scanToken() error {
 	c := s.advance()
 	switch c {
@@ -208,6 +221,11 @@ func (s *Scanner) scanToken() error {
 		}
 	case '#':
 		err := s.addTag()
+		if err != nil {
+			return errorC.Wrap(err, errorC.Syntax, "Error parsing Query: ")
+		}
+	case '@':
+		err := s.addType()
 		if err != nil {
 			return errorC.Wrap(err, errorC.Syntax, "Error parsing Query: ")
 		}
