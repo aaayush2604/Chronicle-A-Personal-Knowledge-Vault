@@ -36,8 +36,11 @@ func (r *REPL) Start() {
 	fmt.Println("Type `help` to see available commands")
 	fmt.Println()
 
+	completer := NewCompleter()
+
 	rl, err := readline.NewEx(&readline.Config{
-		Prompt: fgCyan + "chronicle > " + reset,
+		Prompt:       fgCyan + "chronicle > " + reset,
+		AutoComplete: completer,
 	})
 	if err != nil {
 		panic(err)
