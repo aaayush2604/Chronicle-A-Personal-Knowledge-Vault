@@ -7,6 +7,5 @@ var keywords = map[string]TokenType{
 	"REM":      COMMAND,
 	"REMEMBER": COMMAND,
 	"FORGET":   COMMAND,
-	"REVISE":   COMMAND,
 	"ALL":      ALL,
 }

@@ -1,0 +1,29 @@
+name: Run Go Tests
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout the repository code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Set up the Go environment
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22' # Replace with your required Go version (e.g., 1.21, 1.22, etc.)
+
+      # 3. Download Go modules/dependencies
+      - name: Install dependencies
+        run: go mod download
+
+      # 4. Run your test suite
+      - name: Run tests
+        run: go test -v -race ./...
