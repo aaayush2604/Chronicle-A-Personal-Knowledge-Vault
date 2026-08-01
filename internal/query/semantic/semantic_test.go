@@ -211,3 +211,123 @@ func TestValidTags(t *testing.T) {
 		t.Fatalf("unexpected error")
 	}
 }
+
+func TestForgetAllSemantics(t *testing.T) {
+	scanner := lexer.NewScanner("forget all")
+
+	tokens, err := scanner.ScanTokens()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	p := parser.NewParser(tokens)
+
+	q, err := p.Parse()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := AnalyzeSemantics(q); err != nil {
+		t.Fatalf("unexpected semantic error: %v", err)
+	}
+}
+
+func TestForgetContainsSemantics(t *testing.T) {
+	scanner := lexer.NewScanner(`forget contains["golang"]`)
+
+	tokens, err := scanner.ScanTokens()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	p := parser.NewParser(tokens)
+
+	q, err := p.Parse()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := AnalyzeSemantics(q); err != nil {
+		t.Fatalf("unexpected semantic error: %v", err)
+	}
+}
+
+func TestForgetEmptyContains(t *testing.T) {
+	scanner := lexer.NewScanner(`forget contains[]`)
+
+	tokens, err := scanner.ScanTokens()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	p := parser.NewParser(tokens)
+
+	q, err := p.Parse()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := AnalyzeSemantics(q); err == nil {
+		t.Fatal("expected semantic error")
+	}
+}
+
+func TestForgetEmptyTags(t *testing.T) {
+	scanner := lexer.NewScanner(`forget tags[]`)
+
+	tokens, err := scanner.ScanTokens()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	p := parser.NewParser(tokens)
+
+	q, err := p.Parse()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := AnalyzeSemantics(q); err == nil {
+		t.Fatal("expected semantic error")
+	}
+}
+
+func TestForgetEmptyTypeList(t *testing.T) {
+	scanner := lexer.NewScanner(`forget type[]`)
+
+	tokens, err := scanner.ScanTokens()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	p := parser.NewParser(tokens)
+
+	q, err := p.Parse()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := AnalyzeSemantics(q); err == nil {
+		t.Fatal("expected semantic error")
+	}
+}
+
+func TestForgetComparisonSemantics(t *testing.T) {
+	scanner := lexer.NewScanner(`forget len != 100`)
+
+	tokens, err := scanner.ScanTokens()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	p := parser.NewParser(tokens)
+
+	q, err := p.Parse()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := AnalyzeSemantics(q); err != nil {
+		t.Fatalf("unexpected semantic error: %v", err)
+	}
+}

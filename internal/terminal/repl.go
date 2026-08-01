@@ -11,9 +11,11 @@ import (
 )
 
 type REPL struct {
-	engine  *engine.Engine
-	config  config.Config
-	version string
+	engine   *engine.Engine
+	config   config.Config
+	version  string
+	terminal *readline.Instance
+	prompt   string
 }
 
 func New(engine *engine.Engine, cfg config.Config, version string) *REPL {
@@ -37,14 +39,17 @@ func (r *REPL) Start() {
 	fmt.Println()
 
 	completer := NewCompleter()
+	newPrompt := fgCyan + "chronicle> " + reset
+	r.prompt = newPrompt
 
 	rl, err := readline.NewEx(&readline.Config{
-		Prompt:       fgCyan + "chronicle > " + reset,
+		Prompt:       newPrompt,
 		AutoComplete: completer,
 	})
 	if err != nil {
 		panic(err)
 	}
+	r.terminal = rl
 	defer rl.Close()
 
 	for {

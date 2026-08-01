@@ -174,8 +174,8 @@ func (s *Scanner) scanToken() error {
 		s.addToken(LPAREN)
 	case ')':
 		s.addToken(RPAREN)
-	case ',':
-		s.addToken(COMMA)
+	case ',', '.', '?', '\'':
+		s.addToken(PUNCTUATION)
 	case '<':
 		if s.match('=') {
 			s.addToken(OPERATOR)
@@ -194,8 +194,7 @@ func (s *Scanner) scanToken() error {
 		if s.match('=') {
 			s.addToken(OPERATOR)
 		} else {
-			err := errorC.New(errorC.NotFound, "Unexpected Character")
-			fmt.Println(err.Error())
+			s.addToken(PUNCTUATION)
 		}
 	case '/':
 		if s.match('*') {

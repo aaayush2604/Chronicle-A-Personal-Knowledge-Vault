@@ -356,3 +356,104 @@ func TestRemTags(t *testing.T) {
 		t.Fatalf("content mismatch")
 	}
 }
+
+func TestQueryForgetAll(t *testing.T) {
+	eng := buildEngine(t)
+
+	_, _ = eng.Query(`rem "first"`)
+	_, _ = eng.Query(`rem "second"`)
+
+	results, err := eng.Query(`forget all`)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(results) != 2 {
+		t.Fatalf(
+			"expected 2 results, got %d",
+			len(results),
+		)
+	}
+}
+
+func TestQueryForgetContains(t *testing.T) {
+	eng := buildEngine(t)
+
+	_, _ = eng.Query(`rem "golang database"`)
+
+	_, _ = eng.Query(`rem "machine learning"`)
+
+	results, err := eng.Query(
+		`forget contains["database"]`,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(results) != 1 {
+		t.Fatalf(
+			"expected 1 result, got %d",
+			len(results),
+		)
+	}
+
+	if results[0].Content != `"golang database" ` {
+		t.Fatalf("unexpected entry returned")
+	}
+}
+
+func TestQueryForgetType(t *testing.T) {
+	eng := buildEngine(t)
+
+	_, _ = eng.Query(`rem @note "note"`)
+
+	_, _ = eng.Query(`rem @idea "idea"`)
+
+	results, err := eng.Query(
+		`forget type[note]`,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(results) != 1 {
+		t.Fatalf(
+			"expected 1 result, got %d",
+			len(results),
+		)
+	}
+
+	if results[0].Type != entry.TypeNote {
+		t.Fatalf("expected note")
+	}
+}
+
+func TestQueryForgetLogicalExpression(t *testing.T) {
+	eng := buildEngine(t)
+
+	_, _ = eng.Query(
+		`rem @note "database systems"`,
+	)
+
+	_, _ = eng.Query(
+		`rem @idea "database systems"`,
+	)
+
+	results, err := eng.Query(
+		`forget contains["database"] and type[note]`,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(results) != 1 {
+		t.Fatalf(
+			"expected 1 result, got %d",
+			len(results),
+		)
+	}
+
+	if results[0].Type != entry.TypeNote {
+		t.Fatalf("expected note")
+	}
+}

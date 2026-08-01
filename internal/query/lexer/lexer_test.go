@@ -272,3 +272,67 @@ func TestUnterminatedString(t *testing.T) {
 		t.Fatalf("expected error")
 	}
 }
+
+func TestForgetKeyword(t *testing.T) {
+	scanner := NewScanner("forget all")
+
+	tokens, err := scanner.ScanTokens()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(tokens) != 3 {
+		t.Fatalf("expected 3 tokens, got %d", len(tokens))
+	}
+
+	if tokens[0].TokenType != COMMAND {
+		t.Fatalf("expected COMMAND, got %v", tokens[0].TokenType)
+	}
+
+	if tokens[0].Lexeme != "forget" {
+		t.Fatalf("expected forget, got %q", tokens[0].Lexeme)
+	}
+
+	if tokens[1].TokenType != ALL {
+		t.Fatalf("expected ALL token, got %v", tokens[1].TokenType)
+	}
+}
+
+func TestPunctuationTokens(t *testing.T) {
+	tests := []string{
+		",",
+		".",
+		"?",
+		"'",
+	}
+
+	for _, input := range tests {
+		scanner := NewScanner(input)
+
+		tokens, err := scanner.ScanTokens()
+		if err != nil {
+			t.Fatalf("unexpected error for %q: %v", input, err)
+		}
+
+		if tokens[0].TokenType != PUNCTUATION {
+			t.Fatalf("%q should be PUNCTUATION", input)
+		}
+	}
+}
+
+func TestNotEqualOperator(t *testing.T) {
+	scanner := NewScanner("len != 10")
+
+	tokens, err := scanner.ScanTokens()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if tokens[1].TokenType != OPERATOR {
+		t.Fatalf("expected OPERATOR, got %v", tokens[1].TokenType)
+	}
+
+	if tokens[1].Lexeme != "!=" {
+		t.Fatalf("expected !=, got %q", tokens[1].Lexeme)
+	}
+}

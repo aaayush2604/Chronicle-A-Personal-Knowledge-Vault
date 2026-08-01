@@ -10,6 +10,7 @@ type CommandType string
 const (
 	RecallCommand CommandType = "recall"
 	RemCommand    CommandType = "remember"
+	ForgetCommand CommandType = "forget"
 )
 
 type ExprVisitor interface {

@@ -12,6 +12,7 @@ type CmdOperatorType string
 const (
 	RecallType CmdOperatorType = "recall"
 	RemType    CmdOperatorType = "remember"
+	ForgetType CmdOperatorType = "forget"
 )
 
 // execution pipeline operators
@@ -199,12 +200,65 @@ func (this *Remember) Write(context *ExecContext) (entry.KnowledgeEntry, error) 
 	return e, nil
 }
 
+type Forget struct {
+	cmdType CmdOperatorType
+	ast     parser.Expr
+	child   Operator
+}
+
+func NewForget(tree parser.Expr) *Forget {
+	return &Forget{
+		cmdType: ForgetType,
+		ast:     tree,
+	}
+}
+
+func (this *Forget) GetType() CmdOperatorType {
+	return this.cmdType
+}
+
+func (this *Forget) Next(context *ExecContext) (entry.KnowledgeEntry, bool, error) {
+	e, exhausted, err := this.child.next(context)
+	if err != nil {
+		return entry.KnowledgeEntry{}, false, err
+	}
+	if exhausted {
+		return entry.KnowledgeEntry{}, true, nil
+	}
+	return e, false, nil
+}
+
+func (this *Forget) Setup(context *ExecContext) error {
+	logScan := NewLogScan()
+	filter := NewFilter(logScan, this.ast)
+	this.child = filter
+	err := this.child.setup(context)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (this *Forget) Free(context *ExecContext) error {
+	err := this.child.free(context)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (this *Forget) Write(context *ExecContext) (entry.KnowledgeEntry, error) {
+	return entry.KnowledgeEntry{}, nil
+}
+
 func GetExecutionRoot(expr *parser.Query) Cmd {
 	switch expr.Command {
 	case parser.RecallCommand:
 		return NewRecall(expr.Expr)
 	case parser.RemCommand:
 		return NewRemember(expr.Payload)
+	case parser.ForgetCommand:
+		return NewForget(expr.Expr)
 	default:
 		return nil
 	}

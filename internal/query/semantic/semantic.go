@@ -23,6 +23,9 @@ func AnalyzeSemantics(q *parser.Query) error {
 	case parser.RemCommand:
 		analyzer := &PayloadSemanticAnalyzer{}
 		res, _, _ = q.Payload.Accept(analyzer)
+	case parser.ForgetCommand:
+		analyzer := &ExprSemanticAnalyzer{}
+		res = q.Expr.Accept(analyzer)
 	}
 	if err, ok := res.(error); ok && err != nil {
 		return errorC.Wrap(err, errorC.Validation, "Error in Semantics: ")
@@ -67,6 +70,7 @@ var validComparisonOperators = map[string]struct{}{
 	"<=": {},
 	">=": {},
 	"=":  {},
+	"!=": {},
 }
 
 func isValidComparisonOperator(Op string) bool {

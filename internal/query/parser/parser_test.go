@@ -32,6 +32,16 @@ func TestParseAllQuery(t *testing.T) {
 	if _, ok := q.Expr.(*All); !ok {
 		t.Fatalf("expected All expression")
 	}
+
+	q = parseQuery(t, `forget all`)
+
+	if q.Command != ForgetCommand {
+		t.Fatalf("expected forget command")
+	}
+
+	if _, ok := q.Expr.(*All); !ok {
+		t.Fatalf("expected All expression")
+	}
 }
 
 func TestParseContains(t *testing.T) {
@@ -267,5 +277,102 @@ func TestParseRemDefaultType(t *testing.T) {
 
 	if payload.Type != entry.TypeNote {
 		t.Fatalf("expected default note type")
+	}
+}
+
+func TestParseForgetAll(t *testing.T) {
+	scanner := lexer.NewScanner("forget all")
+
+	tokens, err := scanner.ScanTokens()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	p := NewParser(tokens)
+
+	q, err := p.Parse()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if q.Command != ForgetCommand {
+		t.Fatalf("expected ForgetCommand, got %v", q.Command)
+	}
+
+	if _, ok := q.Expr.(*All); !ok {
+		t.Fatalf("expected *All expression")
+	}
+}
+
+func TestParseForgetContains(t *testing.T) {
+	scanner := lexer.NewScanner(`forget contains["database"]`)
+
+	tokens, err := scanner.ScanTokens()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	p := NewParser(tokens)
+
+	q, err := p.Parse()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if q.Command != ForgetCommand {
+		t.Fatalf("expected ForgetCommand")
+	}
+
+	if _, ok := q.Expr.(*Contains); !ok {
+		t.Fatalf("expected Contains expression")
+	}
+}
+
+func TestParseForgetLogicalExpression(t *testing.T) {
+	scanner := lexer.NewScanner(
+		`forget type[note] AND contains["go"]`,
+	)
+
+	tokens, err := scanner.ScanTokens()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	p := NewParser(tokens)
+
+	q, err := p.Parse()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, ok := q.Expr.(*Logical); !ok {
+		t.Fatalf("expected Logical expression")
+	}
+}
+
+func TestParseForgetComparison(t *testing.T) {
+	scanner := lexer.NewScanner(
+		`forget len != 100`,
+	)
+
+	tokens, err := scanner.ScanTokens()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	p := NewParser(tokens)
+
+	q, err := p.Parse()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cmp, ok := q.Expr.(*Comparison)
+	if !ok {
+		t.Fatalf("expected Comparison")
+	}
+
+	if cmp.Operator.Lexeme != "!=" {
+		t.Fatalf("expected != operator")
 	}
 }

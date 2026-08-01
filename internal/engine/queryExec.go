@@ -53,7 +53,7 @@ func (e *Engine) Query(input string) ([]entry.KnowledgeEntry, error) {
 	defer rootOperator.Free(eContext)
 
 	switch rootOperator.GetType() {
-	case queryExec.RecallType:
+	case queryExec.RecallType, queryExec.ForgetType:
 		for {
 			e, exhausted, err := rootOperator.Next(eContext)
 			if err != nil {
@@ -69,7 +69,6 @@ func (e *Engine) Query(input string) ([]entry.KnowledgeEntry, error) {
 		if err != nil {
 			return nil, errorC.Wrap(err, errorC.Execution, "Error in Query:")
 		}
-
 		res = append(res, e)
 	}
 

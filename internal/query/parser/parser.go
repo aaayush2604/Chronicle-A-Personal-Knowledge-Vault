@@ -105,6 +105,8 @@ func (p *Parser) parseQuery() (*Query, error) {
 		cmd = RecallCommand
 	case "rem", "remember":
 		cmd = RemCommand
+	case "forget":
+		cmd = ForgetCommand
 	default:
 		err := errorC.New(errorC.Syntax, "Syntax Error: Query must begin with a command")
 		return nil, err
@@ -146,6 +148,16 @@ func (p *Parser) parseQuery() (*Query, error) {
 		}
 
 		queryNode.Payload = payload
+		return queryNode, nil
+	case ForgetCommand:
+		expr, err := p.parseExpression()
+
+		if err != nil {
+			err := errorC.Wrap(err, errorC.Syntax, "Error parsing Expression:")
+			return nil, err
+		}
+
+		queryNode.Expr = expr
 		return queryNode, nil
 	}
 
@@ -316,7 +328,7 @@ func (p *Parser) parseStringList() ([]string, error) {
 	words = append(words, p.peek().Literal.(string))
 	p.advance()
 
-	for p.checkTokenType(lexer.COMMA) {
+	for p.check(",") {
 		p.advance()
 		if !p.checkTokenType(lexer.STRING) {
 			return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Expected a String or ] at col %d", p.peek().Position))
@@ -340,7 +352,7 @@ func (p *Parser) parseWordList() ([]string, error) {
 	words = append(words, p.peek().Lexeme)
 	p.advance()
 
-	for p.checkTokenType(lexer.COMMA) {
+	for p.check(",") {
 		p.advance()
 		if !p.checkTokenType(lexer.IDENTIFIER) {
 			return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Expected an Identifier or ] at col %d", p.peek().Position))
