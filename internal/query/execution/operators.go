@@ -13,6 +13,7 @@ const (
 	RecallType CmdOperatorType = "recall"
 	RemType    CmdOperatorType = "remember"
 	ForgetType CmdOperatorType = "forget"
+	ReviseType CmdOperatorType = "revise"
 )
 
 // execution pipeline operators
@@ -107,6 +108,7 @@ type Cmd interface {
 	Free(context *ExecContext) error
 	Next(context *ExecContext) (entry.KnowledgeEntry, bool, error)
 	Write(context *ExecContext) (entry.KnowledgeEntry, error)
+	Update(context *ExecContext) ([]entry.KnowledgeEntry, error)
 }
 
 type Recall struct {
@@ -160,6 +162,10 @@ func (this *Recall) Write(context *ExecContext) (entry.KnowledgeEntry, error) {
 	return entry.KnowledgeEntry{}, nil
 }
 
+func (this *Recall) Update(context *ExecContext) ([]entry.KnowledgeEntry, error) {
+	return []entry.KnowledgeEntry{}, nil
+}
+
 type Remember struct {
 	cmdType CmdOperatorType
 	payload parser.Payload
@@ -198,6 +204,10 @@ func (this *Remember) Write(context *ExecContext) (entry.KnowledgeEntry, error) 
 	}
 
 	return e, nil
+}
+
+func (this *Remember) Update(context *ExecContext) ([]entry.KnowledgeEntry, error) {
+	return []entry.KnowledgeEntry{}, nil
 }
 
 type Forget struct {
@@ -251,6 +261,82 @@ func (this *Forget) Write(context *ExecContext) (entry.KnowledgeEntry, error) {
 	return entry.KnowledgeEntry{}, nil
 }
 
+func (this *Forget) Update(context *ExecContext) ([]entry.KnowledgeEntry, error) {
+	return []entry.KnowledgeEntry{}, nil
+}
+
+type Revise struct {
+	cmdType CmdOperatorType
+	ast     parser.Expr
+	child   Operator
+	payload parser.Payload
+}
+
+func NewRevise(tree parser.Expr, p parser.Payload) *Revise {
+	return &Revise{
+		cmdType: ReviseType,
+		ast:     tree,
+		payload: p,
+	}
+}
+
+func (this *Revise) GetType() CmdOperatorType {
+	return this.cmdType
+}
+
+func (this *Revise) Next(context *ExecContext) (entry.KnowledgeEntry, bool, error) {
+	e, exhausted, err := this.child.next(context)
+	if err != nil {
+		return entry.KnowledgeEntry{}, false, err
+	}
+	if exhausted {
+		return entry.KnowledgeEntry{}, true, nil
+	}
+	return e, false, nil
+}
+
+func (this *Revise) Setup(context *ExecContext) error {
+	logScan := NewLogScan()
+	filter := NewFilter(logScan, this.ast)
+	this.child = filter
+	err := this.child.setup(context)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (this *Revise) Free(context *ExecContext) error {
+	err := this.child.free(context)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (this *Revise) Write(context *ExecContext) (entry.KnowledgeEntry, error) {
+	return entry.KnowledgeEntry{}, nil
+}
+
+func (this *Revise) Update(context *ExecContext) ([]entry.KnowledgeEntry, error) {
+	eType, tags, _ := EvaluatePayload(this.payload)
+	var res []entry.KnowledgeEntry
+
+	for {
+		e, exhausted, err := this.Next(context)
+		if err != nil {
+			return []entry.KnowledgeEntry{}, errorC.Wrap(err, errorC.Execution, "Error in Updating Entry:")
+		}
+
+		if exhausted {
+			return res, nil
+		}
+
+		e, err = context.Store.AddUpdate(e.ID, e.Content, e.Tags, tags.([]*lexer.Token), eType.(entry.EntryType))
+		res = append(res, e)
+	}
+}
+
 func GetExecutionRoot(expr *parser.Query) Cmd {
 	switch expr.Command {
 	case parser.RecallCommand:
@@ -259,6 +345,8 @@ func GetExecutionRoot(expr *parser.Query) Cmd {
 		return NewRemember(expr.Payload)
 	case parser.ForgetCommand:
 		return NewForget(expr.Expr)
+	case parser.ReviseCommand:
+		return NewRevise(expr.Expr, expr.Payload)
 	default:
 		return nil
 	}

@@ -253,3 +253,7 @@ func EvaluatePayload(p parser.Payload) (any, any, any) {
 func (e *PayloadEvaluator) VisitRemPayload(p *parser.RemPayload) (any, any, any) {
 	return p.Type, p.Tags, p.Content
 }
+
+func (e *PayloadEvaluator) VisitRevisePayload(p *parser.RevisePayload) (any, any, any) {
+	return p.Type, p.Tags, nil
+}

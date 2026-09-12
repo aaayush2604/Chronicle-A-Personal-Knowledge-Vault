@@ -3,14 +3,14 @@ package engine
 import (
 	"chronicle/internal/entry"
 	"chronicle/internal/errorC"
-	queryExec "chronicle/internal/query/execution"
+	"chronicle/internal/query/execution"
 	"chronicle/internal/query/lexer"
 	"chronicle/internal/query/parser"
 	"chronicle/internal/query/semantic"
 )
 
-func entryToRecord(e entry.KnowledgeEntry) queryExec.Record {
-	return queryExec.Record{
+func entryToRecord(e entry.KnowledgeEntry) execution.Record {
+	return execution.Record{
 		"content": e.Content,
 		"date":    e.Timestamp,
 		"len":     len(e.Content),
@@ -39,9 +39,9 @@ func (e *Engine) Query(input string) ([]entry.KnowledgeEntry, error) {
 		return nil, errorC.Wrap(err, errorC.Syntax, "Error in Query:")
 	}
 
-	rootOperator := queryExec.GetExecutionRoot(q)
+	rootOperator := execution.GetExecutionRoot(q)
 
-	eContext := &queryExec.ExecContext{
+	eContext := &execution.ExecContext{
 		Store:   e.store,
 		Ast:     q.Expr,
 		Payload: q.Payload,
@@ -53,7 +53,7 @@ func (e *Engine) Query(input string) ([]entry.KnowledgeEntry, error) {
 	defer rootOperator.Free(eContext)
 
 	switch rootOperator.GetType() {
-	case queryExec.RecallType, queryExec.ForgetType:
+	case execution.RecallType, execution.ForgetType:
 		for {
 			e, exhausted, err := rootOperator.Next(eContext)
 			if err != nil {
@@ -64,12 +64,20 @@ func (e *Engine) Query(input string) ([]entry.KnowledgeEntry, error) {
 			}
 			res = append(res, e)
 		}
-	case queryExec.RemType:
+	case execution.RemType:
 		e, err := rootOperator.Write(eContext)
 		if err != nil {
 			return nil, errorC.Wrap(err, errorC.Execution, "Error in Query:")
 		}
 		res = append(res, e)
+	case execution.ReviseType:
+		entries, err := rootOperator.Update(eContext)
+		if err != nil {
+			return nil, errorC.Wrap(err, errorC.Execution, "Error in Query:")
+		}
+		for _, e := range entries {
+			res = append(res, e)
+		}
 	}
 
 	return res, nil

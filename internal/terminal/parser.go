@@ -61,6 +61,21 @@ func (r *REPL) handle(input string) bool {
 		printEntries(results)
 
 		return false
+
+	case "revise":
+		if len(parts) < 4 {
+			fmt.Println("Usage: revise <tags (optional)> <entry type (optional)> where <predicate>")
+			return false
+		}
+
+		res, err := r.engine.Query(input)
+		if err != nil {
+			fmt.Println(errorC.FormatError(err))
+		}
+		printEntries(res)
+
+		return false
+
 	case "forget":
 		if len(parts) < 2 {
 			fmt.Println("Usage: forget <predicate>")

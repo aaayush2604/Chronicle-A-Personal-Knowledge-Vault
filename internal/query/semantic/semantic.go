@@ -26,6 +26,13 @@ func AnalyzeSemantics(q *parser.Query) error {
 	case parser.ForgetCommand:
 		analyzer := &ExprSemanticAnalyzer{}
 		res = q.Expr.Accept(analyzer)
+	case parser.ReviseCommand:
+		payloadAnalyzer := &PayloadSemanticAnalyzer{}
+		exprAnalyzer := &ExprSemanticAnalyzer{}
+		res, _, _ = q.Payload.Accept(payloadAnalyzer)
+		if res == nil {
+			res = q.Expr.Accept(exprAnalyzer)
+		}
 	}
 	if err, ok := res.(error); ok && err != nil {
 		return errorC.Wrap(err, errorC.Validation, "Error in Semantics: ")
@@ -165,6 +172,13 @@ func (s *PayloadSemanticAnalyzer) VisitRemPayload(payload *parser.RemPayload) (a
 	}
 	if len(payload.Content) == 0 {
 		return errorC.New(errorC.Validation, "No Content specified for the entry"), nil, nil
+	}
+	return nil, nil, nil
+}
+
+func (s *PayloadSemanticAnalyzer) VisitRevisePayload(payload *parser.RevisePayload) (any, any, any) {
+	if payload.Type == "" && len(payload.Tags) == 0 {
+		return errorC.New(errorC.Validation, "No New Tags or Entry Type modification specified"), nil, nil
 	}
 	return nil, nil, nil
 }

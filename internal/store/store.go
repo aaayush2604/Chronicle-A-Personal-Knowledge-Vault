@@ -53,6 +53,24 @@ func (s *Store) Add(content string, tags []*lexer.Token, t entry.EntryType) (ent
 	return e, nil
 }
 
+func (s *Store) AddUpdate(id int, content string, Tags []string, tags []*lexer.Token, t entry.EntryType) (entry.KnowledgeEntry, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for _, l := range tags {
+		Tags = append(Tags, l.Literal.(string))
+	}
+	e := entry.New(id, content, Tags)
+	e.Type = t
+
+	if err := s.append(e); err != nil {
+		return entry.KnowledgeEntry{}, err
+	}
+
+	update(s.entries, e)
+	return e, nil
+}
+
 func (s *Store) List() []entry.KnowledgeEntry {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -65,4 +83,17 @@ func (s *Store) List() []entry.KnowledgeEntry {
 		out = append(out, e)
 	}
 	return out
+}
+
+func update(list []entry.KnowledgeEntry, e entry.KnowledgeEntry) {
+	flag := false
+	for i, l := range list {
+		if l.ID == e.ID {
+			list[i] = e
+			flag = true
+		}
+	}
+	if !flag {
+		list = append(list, e)
+	}
 }

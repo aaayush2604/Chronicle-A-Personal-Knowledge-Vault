@@ -107,6 +107,8 @@ func (p *Parser) parseQuery() (*Query, error) {
 		cmd = RemCommand
 	case "forget":
 		cmd = ForgetCommand
+	case "revise":
+		cmd = ReviseCommand
 	default:
 		err := errorC.New(errorC.Syntax, "Syntax Error: Query must begin with a command")
 		return nil, err
@@ -128,7 +130,7 @@ func (p *Parser) parseQuery() (*Query, error) {
 		Command: cmd,
 	}
 	switch cmd {
-	case RecallCommand:
+	case RecallCommand, ForgetCommand:
 		expr, err := p.parseExpression()
 
 		if err != nil {
@@ -140,7 +142,7 @@ func (p *Parser) parseQuery() (*Query, error) {
 		return queryNode, nil
 
 	case RemCommand:
-		payload, err := p.parsePayload()
+		payload, err := p.parseRemPayload()
 
 		if err != nil {
 			err := errorC.Wrap(err, errorC.Syntax, "Error parsing Payload:")
@@ -149,11 +151,23 @@ func (p *Parser) parseQuery() (*Query, error) {
 
 		queryNode.Payload = payload
 		return queryNode, nil
-	case ForgetCommand:
-		expr, err := p.parseExpression()
+	case ReviseCommand:
+		payload, err := p.parseRevisePayload()
 
 		if err != nil {
-			err := errorC.Wrap(err, errorC.Syntax, "Error parsing Expression:")
+			err := errorC.Wrap(err, errorC.Syntax, "Error parsing Payload:")
+			return nil, err
+		}
+
+		queryNode.Payload = payload
+
+		if !p.matchLexeme("where") {
+			return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Expected WHERE command at col %d", p.peek().Position))
+		}
+		expr, err := p.parseWhere()
+
+		if err != nil {
+			err := errorC.Wrap(err, errorC.Syntax, "Error parsing Where clause:")
 			return nil, err
 		}
 
@@ -385,7 +399,8 @@ func (p *Parser) parseComparison() (Expr, error) {
 	return NewComparison(field, opToken, literal), nil
 }
 
-func (p *Parser) parsePayload() (Payload, error) {
+func (p *Parser) parseRemPayload() (Payload, error) {
+
 	eType := entry.TypeNote
 	if p.checkTokenType(lexer.ETYPE) {
 		switch p.peek().Literal.(string) {
@@ -414,7 +429,7 @@ func (p *Parser) parsePayload() (Payload, error) {
 	}
 
 	var content []*lexer.Token
-	for !p.checkTokenType(lexer.EOF) {
+	for !p.checkTokenType(lexer.EOF, lexer.COMMAND) {
 		content = append(content, p.peek())
 		p.advance()
 	}
@@ -424,4 +439,45 @@ func (p *Parser) parsePayload() (Payload, error) {
 		Tags:    tags,
 		Content: content,
 	}, nil
+}
+
+func (p *Parser) parseRevisePayload() (Payload, error) {
+	var eType entry.EntryType
+	if p.checkTokenType(lexer.ETYPE) {
+		switch p.peek().Literal.(string) {
+		case "n", "note":
+			eType = entry.TypeNote
+		case "l", "learning":
+			eType = entry.TypeLearning
+		case "q", "question":
+			eType = entry.TypeQuestion
+		case "i", "idea":
+			eType = entry.TypeIdea
+		case "imp", "important":
+			eType = entry.TypeImportant
+		}
+		p.advance()
+	}
+
+	var tags []*lexer.Token
+	for p.checkTokenType(lexer.TAG) {
+		tags = append(tags, p.peek())
+		p.advance()
+	}
+
+	return &RevisePayload{
+		Type: eType,
+		Tags: tags,
+	}, nil
+}
+
+func (p *Parser) parseWhere() (Expr, error) {
+	expr, err := p.parseExpression()
+
+	if err != nil {
+		err := errorC.Wrap(err, errorC.Syntax, "Error parsing Expression:")
+		return nil, err
+	}
+
+	return expr, nil
 }

@@ -11,6 +11,7 @@ const (
 	RecallCommand CommandType = "recall"
 	RemCommand    CommandType = "remember"
 	ForgetCommand CommandType = "forget"
+	ReviseCommand CommandType = "revise"
 )
 
 type ExprVisitor interface {
@@ -26,6 +27,7 @@ type ExprVisitor interface {
 
 type PayloadVisitor interface {
 	VisitRemPayload(*RemPayload) (any, any, any)
+	VisitRevisePayload(*RevisePayload) (any, any, any)
 }
 
 type Expr interface {
@@ -182,4 +184,15 @@ func (n *RemPayload) payloadNode() {}
 
 func (n *RemPayload) Accept(v PayloadVisitor) (any, any, any) {
 	return v.VisitRemPayload(n)
+}
+
+type RevisePayload struct {
+	Type entry.EntryType
+	Tags []*lexer.Token
+}
+
+func (n *RevisePayload) payloadNode() {}
+
+func (n *RevisePayload) Accept(v PayloadVisitor) (any, any, any) {
+	return v.VisitRevisePayload(n)
 }
