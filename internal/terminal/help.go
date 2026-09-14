@@ -36,7 +36,7 @@ func printHelp(version string) {
 	fmt.Println("  other alphabets are all kept:")
 	fmt.Println("    rem cost is 50% of budget")
 	fmt.Println("    rem see http://example.com and/or ask")
-	fmt.Println("    rem café naïve 🎉")
+	fmt.Println("    rem café naïve")
 	fmt.Println()
 	fmt.Println("  A # or @ inside the text is just text. Only the markers before")
 	fmt.Println("  the entry are read as a type and tags:")

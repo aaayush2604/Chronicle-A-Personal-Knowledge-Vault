@@ -68,7 +68,7 @@ Nothing after the markers is interpreted, so case, punctuation, symbols and othe
 ```bash
 rem cost is 50% of budget
 rem see http://example.com and/or ask
-rem café naïve 🎉
+rem café naïve
 ```
 
 A `#` or `@` inside the text is just text. Only the markers **before** the entry are read as a type and tags:
