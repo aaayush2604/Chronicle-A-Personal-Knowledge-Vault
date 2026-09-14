@@ -331,3 +331,19 @@ func TestForgetComparisonSemantics(t *testing.T) {
 		t.Fatalf("unexpected semantic error: %v", err)
 	}
 }
+
+func TestEmptyIDListIsRejected(t *testing.T) {
+	tokens, err := lexer.NewScanner(`recall id[]`).ScanTokens()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	q, err := parser.NewParser(tokens).Parse()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := AnalyzeSemantics(q); err == nil {
+		t.Fatalf("expected an empty id list to be rejected")
+	}
+}

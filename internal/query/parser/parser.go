@@ -5,6 +5,8 @@ import (
 	"chronicle/internal/errorC"
 	lexer "chronicle/internal/query/lexer"
 	"fmt"
+	"slices"
+	"strings"
 )
 
 type Parser struct {
@@ -115,26 +117,29 @@ func (p *Parser) parseQuery() (*Query, error) {
 	}
 	p.advance() //for consuming the cmd
 
-	expr, ok := p.parseAll()
-	if ok {
-		if !p.isAtEnd() {
-			return nil, errorC.New(errorC.Syntax, "There should be no input after ALL")
-		}
-		return &Query{
-			Command: cmd,
-			Expr:    expr,
-		}, nil
-	}
-
 	queryNode := &Query{
 		Command: cmd,
 	}
 	switch cmd {
 	case RecallCommand, ForgetCommand:
+		expr, ok := p.parseAll()
+		if ok {
+			if !p.isAtEnd() {
+				return nil, errorC.New(errorC.Syntax, "There should be no input after ALL")
+			}
+			return &Query{
+				Command: cmd,
+				Expr:    expr,
+			}, nil
+		}
 		expr, err := p.parseExpression()
 
 		if err != nil {
 			err := errorC.Wrap(err, errorC.Syntax, "Error parsing Expression:")
+			return nil, err
+		}
+
+		if err := p.expectEnd(); err != nil {
 			return nil, err
 		}
 
@@ -168,6 +173,10 @@ func (p *Parser) parseQuery() (*Query, error) {
 
 		if err != nil {
 			err := errorC.Wrap(err, errorC.Syntax, "Error parsing Where clause:")
+			return nil, err
+		}
+
+		if err := p.expectEnd(); err != nil {
 			return nil, err
 		}
 
@@ -247,6 +256,12 @@ func (p *Parser) parseFactor() (Expr, error) {
 				return nil, errorC.Wrap(err, errorC.Syntax, "Error parsing Tags:")
 			}
 			return expr, nil
+		} else if p.matchLexeme("id") {
+			expr, err := p.parseIDs()
+			if err != nil {
+				return nil, errorC.Wrap(err, errorC.Syntax, "Error parsing Ids:")
+			}
+			return expr, nil
 		} else {
 			expr, err := p.parseComparison()
 			if err != nil {
@@ -298,7 +313,7 @@ func (p *Parser) parseTypeFilter() (Expr, error) {
 		return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Error parsing Type List [ at col %d", p.peek().Position))
 	}
 
-	strings, err := p.parseWordList()
+	strings, err := p.parseWordList("type")
 	if err != nil {
 		return nil, errorC.Wrap(err, errorC.Syntax, "Error in parsing Type List:")
 	}
@@ -316,7 +331,7 @@ func (p *Parser) parseTags() (Expr, error) {
 		return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Error parsing Tags List [ at col %d", p.peek().Position))
 	}
 
-	strings, err := p.parseWordList()
+	strings, err := p.parseWordList("tags")
 	if err != nil {
 		return nil, errorC.Wrap(err, errorC.Syntax, "Error in parsing Tags List:")
 	}
@@ -327,6 +342,68 @@ func (p *Parser) parseTags() (Expr, error) {
 	}
 
 	return expr, nil
+}
+
+func (p *Parser) parseIDs() (Expr, error) {
+	if !(p.checkTokenType(lexer.LBRACKET) && p.matchLexeme("[")) {
+		return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Error parsing Id List [ at col %d", p.peek().Position))
+	}
+
+	ids, err := p.parseIDList()
+	if err != nil {
+		return nil, errorC.Wrap(err, errorC.Syntax, "Error in parsing Id List:")
+	}
+	expr := NewIDs(ids)
+
+	if !(p.checkTokenType(lexer.RBRACKET) && p.matchLexeme("]")) {
+		return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Error parsing Id List ] at col %d", p.peek().Position))
+	}
+
+	return expr, nil
+}
+
+func (p *Parser) parseIDList() ([]int, error) {
+	if p.checkTokenType(lexer.RBRACKET) {
+		return []int{}, nil
+	}
+
+	var ids []int
+
+	id, err := p.parseEntryID()
+	if err != nil {
+		return nil, err
+	}
+	ids = append(ids, id)
+
+	for p.check(",") {
+		p.advance()
+
+		id, err := p.parseEntryID()
+		if err != nil {
+			return nil, err
+		}
+		if !slices.Contains(ids, id) {
+			ids = append(ids, id)
+		}
+	}
+
+	return ids, nil
+}
+
+func (p *Parser) parseEntryID() (int, error) {
+	token := p.peek()
+
+	if token.TokenType != lexer.NUMBER {
+		return 0, errorC.New(errorC.Syntax, fmt.Sprintf("Expected an entry id at col %d, ids are whole numbers like id[3,7]", token.Position))
+	}
+
+	value, ok := token.Literal.(float64)
+	if !ok || value != float64(int(value)) || value < 1 {
+		return 0, errorC.New(errorC.Syntax, fmt.Sprintf("%s is not a valid entry id at col %d, ids are whole numbers starting at 1", token.Lexeme, token.Position))
+	}
+
+	p.advance()
+	return int(value), nil
 }
 
 func (p *Parser) parseStringList() ([]string, error) {
@@ -353,14 +430,14 @@ func (p *Parser) parseStringList() ([]string, error) {
 	return words, nil
 }
 
-func (p *Parser) parseWordList() ([]string, error) {
+func (p *Parser) parseWordList(list string) ([]string, error) {
 	if p.checkTokenType(lexer.RBRACKET) {
 		return []string{}, nil
 	}
 
 	var words []string
 	if !p.checkTokenType(lexer.IDENTIFIER) {
-		return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Expected an Identifier at col %d", p.peek().Position))
+		return nil, wordListError(p.peek(), list)
 	}
 
 	words = append(words, p.peek().Lexeme)
@@ -369,12 +446,35 @@ func (p *Parser) parseWordList() ([]string, error) {
 	for p.check(",") {
 		p.advance()
 		if !p.checkTokenType(lexer.IDENTIFIER) {
-			return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Expected an Identifier or ] at col %d", p.peek().Position))
+			return nil, wordListError(p.peek(), list)
 		}
 		words = append(words, p.peek().Lexeme)
 		p.advance()
 	}
 	return words, nil
+}
+
+func wordListError(token *lexer.Token, list string) error {
+	if lexer.IsReserved(token) {
+		return errorC.New(errorC.Syntax, fmt.Sprintf(
+			"%q is a reserved word and cannot be used inside %s[...]\nReserved words: %s\nSee `help` for the full list",
+			token.Lexeme, list, strings.Join(lexer.ReservedWords(), ", "),
+		))
+	}
+
+	return errorC.New(errorC.Syntax, fmt.Sprintf("Expected an Identifier at col %d", token.Position))
+}
+
+func (p *Parser) expectEnd() error {
+	if p.isAtEnd() {
+		return nil
+	}
+
+	token := p.peek()
+	return errorC.New(errorC.Syntax, fmt.Sprintf(
+		"Unexpected input %q at col %d. Join predicates with AND or OR",
+		token.Lexeme, token.Position,
+	))
 }
 
 func (p *Parser) parseComparison() (Expr, error) {
@@ -400,38 +500,45 @@ func (p *Parser) parseComparison() (Expr, error) {
 }
 
 func (p *Parser) parseRemPayload() (Payload, error) {
-
 	eType := entry.TypeNote
-	if p.checkTokenType(lexer.ETYPE) {
-		switch p.peek().Literal.(string) {
-		case "n", "note":
-			eType = entry.TypeNote
-		case "l", "learning":
-			eType = entry.TypeLearning
-		case "q", "question":
-			eType = entry.TypeQuestion
-		case "i", "idea":
-			eType = entry.TypeIdea
-		case "imp", "important":
-			eType = entry.TypeImportant
+	typeSeen := false
+
+	var tags []string
+
+	for p.checkTokenType(lexer.ETYPE, lexer.TAG) {
+		token := p.peek()
+
+		if token.TokenType == lexer.ETYPE {
+			if typeSeen {
+				return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Entry type specified more than once at col %d", token.Position))
+			}
+
+			name := token.Literal.(string)
+			t, ok := entry.TypeFor(name)
+			if !ok {
+				return nil, unknownEntryType("@" + name)
+			}
+
+			eType = t
+			typeSeen = true
+		} else {
+			tag := token.Literal.(string)
+			if tag != "" && !slices.Contains(tags, tag) {
+				tags = append(tags, tag)
+			}
 		}
+
 		p.advance()
 	}
 
-	var tags []*lexer.Token
-	for p.checkTokenType(lexer.TAG) {
-		tags = append(tags, p.peek())
+	var content string
+	if p.checkTokenType(lexer.TEXT) {
+		content = p.peek().Lexeme
 		p.advance()
 	}
 
-	if p.checkTokenType(lexer.COMMAND, lexer.ETYPE, lexer.TAG) {
-		return nil, errorC.New(errorC.Syntax, fmt.Sprintf("Expected Entry Content at col %d", p.peek().Position))
-	}
-
-	var content []*lexer.Token
-	for !p.checkTokenType(lexer.EOF, lexer.COMMAND) {
-		content = append(content, p.peek())
-		p.advance()
+	if len(content) >= 2 && strings.HasPrefix(content, `"`) && strings.HasSuffix(content, `"`) {
+		content = content[1 : len(content)-1]
 	}
 
 	return &RemPayload{
@@ -441,21 +548,26 @@ func (p *Parser) parseRemPayload() (Payload, error) {
 	}, nil
 }
 
+func unknownEntryType(word string) error {
+	return errorC.New(errorC.Validation, fmt.Sprintf(
+		"Unknown entry type %q\nValid types: @note (@n), @idea (@i), @question (@q), @learning (@l), @important (@imp)\nTo store it as text, quote the entry: rem \"%s ...\"",
+		word, word,
+	))
+}
+
 func (p *Parser) parseRevisePayload() (Payload, error) {
+	if p.checkTokenType(lexer.ALL) {
+		return &RevisePayload{}, errorC.New(errorC.Syntax, "All is only usable with Retreival commands")
+	}
+
 	var eType entry.EntryType
 	if p.checkTokenType(lexer.ETYPE) {
-		switch p.peek().Literal.(string) {
-		case "n", "note":
-			eType = entry.TypeNote
-		case "l", "learning":
-			eType = entry.TypeLearning
-		case "q", "question":
-			eType = entry.TypeQuestion
-		case "i", "idea":
-			eType = entry.TypeIdea
-		case "imp", "important":
-			eType = entry.TypeImportant
+		name := p.peek().Literal.(string)
+		t, ok := entry.TypeFor(name)
+		if !ok {
+			return nil, unknownEntryType("@" + name)
 		}
+		eType = t
 		p.advance()
 	}
 
@@ -472,6 +584,13 @@ func (p *Parser) parseRevisePayload() (Payload, error) {
 }
 
 func (p *Parser) parseWhere() (Expr, error) {
+	if p.matchLexeme("all") {
+		if !p.isAtEnd() {
+			return nil, errorC.New(errorC.Syntax, "There should be no input after ALL")
+		}
+		return &All{}, nil
+	}
+
 	expr, err := p.parseExpression()
 
 	if err != nil {

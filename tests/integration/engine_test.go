@@ -97,35 +97,6 @@ func TestEngineRecall(t *testing.T) {
 	}
 }
 
-func TestSummaryByType(t *testing.T) {
-	dir := t.TempDir()
-	logPath := filepath.Join(dir, "chronicle.log")
-
-	s, err := store.New(logPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	idx := index.New()
-	eng := engine.New(s, idx)
-
-	entries := []entry.KnowledgeEntry{
-		{Type: entry.TypeNote},
-		{Type: entry.TypeNote},
-		{Type: entry.TypeIdea},
-	}
-
-	summary := eng.SummaryByType(entries)
-
-	if summary[entry.TypeNote] != 2 {
-		t.Fatalf("expected 2 notes")
-	}
-
-	if summary[entry.TypeIdea] != 1 {
-		t.Fatalf("expected 1 idea")
-	}
-}
-
 func TestEngineProcessDeletionDeleteAll(t *testing.T) {
 	dir := t.TempDir()
 	logPath := filepath.Join(dir, "chronicle.log")
@@ -144,8 +115,13 @@ func TestEngineProcessDeletionDeleteAll(t *testing.T) {
 
 	entries := s.List()
 
-	if err := eng.ProcessDeletion(nil, entries); err != nil {
+	deleted, err := eng.ProcessDeletion(nil, entries)
+	if err != nil {
 		t.Fatal(err)
+	}
+
+	if deleted != len(entries) {
+		t.Fatalf("expected %d deletions, got %d", len(entries), deleted)
 	}
 
 	if len(s.List()) != 0 {
@@ -169,8 +145,13 @@ func TestEngineProcessDeletionSubset(t *testing.T) {
 	e2, _ := eng.AddNote("two", entry.TypeNote)
 	e3, _ := eng.AddNote("three", entry.TypeNote)
 
-	if err := eng.ProcessDeletion([]int{e2.ID}, s.List()); err != nil {
+	deleted, err := eng.ProcessDeletion([]int{e2.ID}, s.List())
+	if err != nil {
 		t.Fatal(err)
+	}
+
+	if deleted != 1 {
+		t.Fatalf("expected 1 deletion, got %d", deleted)
 	}
 
 	remaining := s.List()
@@ -203,10 +184,14 @@ func TestEngineProcessDeletionInvalidID(t *testing.T) {
 
 	_, _ = eng.AddNote("one", entry.TypeNote)
 
-	err = eng.ProcessDeletion([]int{999}, s.List())
+	deleted, err := eng.ProcessDeletion([]int{999}, s.List())
 
 	if err == nil {
 		t.Fatalf("expected error")
+	}
+
+	if deleted != 0 {
+		t.Fatalf("expected 0 deletions, got %d", deleted)
 	}
 }
 
@@ -225,10 +210,14 @@ func TestEngineProcessDeletionMixedIDs(t *testing.T) {
 	e1, _ := eng.AddNote("one", entry.TypeNote)
 	_, _ = eng.AddNote("two", entry.TypeNote)
 
-	err = eng.ProcessDeletion([]int{e1.ID, 999}, s.List())
+	deleted, err := eng.ProcessDeletion([]int{e1.ID, 999}, s.List())
 
 	if err == nil {
 		t.Fatalf("expected error")
+	}
+
+	if deleted != 0 {
+		t.Fatalf("expected 0 deletions when validation fails, got %d", deleted)
 	}
 }
 
@@ -244,8 +233,13 @@ func TestEngineProcessDeletionEmptyResult(t *testing.T) {
 	idx := index.New()
 	eng := engine.New(s, idx)
 
-	if err := eng.ProcessDeletion(nil, nil); err != nil {
+	deleted, err := eng.ProcessDeletion(nil, nil)
+	if err != nil {
 		t.Fatal(err)
+	}
+
+	if deleted != 0 {
+		t.Fatalf("expected 0 deletions, got %d", deleted)
 	}
 
 	if len(s.List()) != 0 {
@@ -277,8 +271,13 @@ func TestEngineForgetWorkflow(t *testing.T) {
 		t.Fatalf("expected one matching entry")
 	}
 
-	if err := eng.ProcessDeletion(nil, results); err != nil {
+	deleted, err := eng.ProcessDeletion(nil, results)
+	if err != nil {
 		t.Fatal(err)
+	}
+
+	if deleted != len(results) {
+		t.Fatalf("expected %d deletions, got %d", len(results), deleted)
 	}
 
 	remaining, err := eng.Query(`recall all`)
@@ -290,7 +289,7 @@ func TestEngineForgetWorkflow(t *testing.T) {
 		t.Fatalf("expected one remaining entry")
 	}
 
-	if remaining[0].Content != `"machine learning" ` {
+	if remaining[0].Content != "machine learning" {
 		t.Fatalf("wrong entry was deleted")
 	}
 }

@@ -15,7 +15,10 @@ import (
 func (s *Store) replay() error {
 	file, err := os.Open(s.logPath)
 	if err != nil {
-		return nil
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return errorC.New(errorC.Execution, fmt.Sprintf("Cannot read the log file at %s: %v", s.logPath, err))
 	}
 
 	defer file.Close()
@@ -46,6 +49,19 @@ func (s *Store) replay() error {
 			continue
 		}
 
+		update := false
+		for i, c := range s.entries {
+			if c.ID == e.ID {
+				s.entries[i] = e
+				update = true
+				break
+			}
+		}
+
+		if update {
+			continue
+		}
+
 		s.entries = append(s.entries, e)
 		if e.ID >= s.nextID {
 			s.nextID = e.ID + 1
@@ -53,8 +69,10 @@ func (s *Store) replay() error {
 	}
 
 	fmt.Printf(
-		"Loaded %d entries\n⚠ %d entries could not be read and were skipped\n\n",
-		lineNo-warnings,
+		"Read %d records from the log, %d entries loaded, %d deleted\n⚠ %d records could not be read and were skipped\n\n",
+		lineNo,
+		len(s.entries)-len(s.deleted),
+		len(s.deleted),
 		warnings,
 	)
 
@@ -62,14 +80,16 @@ func (s *Store) replay() error {
 }
 
 func parseLine(line string) (entry.KnowledgeEntry, error) {
-	parts := strings.Split(line, "|")
+	schema, _, _ := strings.Cut(line, "|")
+
 	var version int
 	var id int
 	var tags []string
 	var ts time.Time
 	var err error
 
-	if parts[0] == "3" {
+	if schema == "3" {
+		parts := strings.SplitN(line, "|", 6)
 		if len(parts) != 6 {
 			fmt.Println("^")
 			return entry.KnowledgeEntry{}, fmt.Errorf("invalid field count")
@@ -89,12 +109,13 @@ func parseLine(line string) (entry.KnowledgeEntry, error) {
 			ID:        id,
 			Tags:      tags,
 			Timestamp: ts,
-			Type:      entry.EntryType(parts[4]),
+			Type:      entry.Canonical(parts[4]),
 			Content:   parts[5],
 		}, nil
 	}
 
-	if parts[0] == "2" {
+	if schema == "2" {
+		parts := strings.SplitN(line, "|", 5)
 		if len(parts) != 5 {
 			fmt.Println("^")
 			return entry.KnowledgeEntry{}, fmt.Errorf("invalid field count")
@@ -111,10 +132,10 @@ func parseLine(line string) (entry.KnowledgeEntry, error) {
 			ID:        id,
 			Tags:      tags,
 			Timestamp: ts,
-			Type:      entry.EntryType(parts[3]),
+			Type:      entry.Canonical(parts[3]),
 			Content:   parts[4],
 		}, nil
 	}
 
-	return entry.KnowledgeEntry{}, errorC.New(errorC.Execution, fmt.Sprintf("Error in Parsing Entry from version: %s", parts[0]))
+	return entry.KnowledgeEntry{}, errorC.New(errorC.Execution, fmt.Sprintf("Error in Parsing Entry from version: %s", schema))
 }

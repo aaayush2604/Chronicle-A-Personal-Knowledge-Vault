@@ -12,7 +12,6 @@ func printEntries(entries []entry.KnowledgeEntry) {
 		return
 	}
 
-	count := 0
 	for _, e := range entries {
 		// fmt.Printf("[%d] (%s) %s\n", e.ID, e.Type, e.Content)
 
@@ -30,12 +29,6 @@ func printEntries(entries []entry.KnowledgeEntry) {
 			colorForType(e.Type), e.Content, reset,
 			e.Type, e.Timestamp.Format("3:04 PM 02-01-2006"), sb.String(),
 		)
-
-		count++
-		if count%pageSize == 0 {
-			fmt.Print(dim + "Press Enter to continue..." + reset)
-			pause()
-		}
 	}
 }
 

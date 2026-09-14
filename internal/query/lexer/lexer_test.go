@@ -336,3 +336,84 @@ func TestNotEqualOperator(t *testing.T) {
 		t.Fatalf("expected !=, got %q", tokens[1].Lexeme)
 	}
 }
+
+func TestRemContentIsVerbatim(t *testing.T) {
+	cases := []struct {
+		input   string
+		content string
+	}{
+		{`rem I will revise this tomorrow`, "I will revise this tomorrow"},
+		{`rem where did I put my keys`, "where did I put my keys"},
+		{`rem recall the meeting notes`, "recall the meeting notes"},
+		{`rem all hands meeting`, "all hands meeting"},
+		{`rem Meeting with John, at 5 PM.`, "Meeting with John, at 5 PM."},
+		{`rem cost is 50% of budget`, "cost is 50% of budget"},
+		{`rem see http://example.com and/or ask`, "see http://example.com and/or ask"},
+		{`rem my e-mail id`, "my e-mail id"},
+		{`rem café naïve 🎉`, "café naïve 🎉"},
+		{`rem pipe | inside content`, "pipe | inside content"},
+		{`remember note: this is a test`, "note: this is a test"},
+		{`rem @idea #go #db all hands sync at 4:30`, "all hands sync at 4:30"},
+		{`rem #go @idea the text`, "the text"},
+	}
+
+	for _, c := range cases {
+		tokens, err := NewScanner(c.input).ScanTokens()
+		if err != nil {
+			t.Fatalf("%q: unexpected error %v", c.input, err)
+		}
+
+		var got string
+		for _, tok := range tokens {
+			if tok.TokenType == TEXT {
+				got = tok.Lexeme
+			}
+		}
+
+		if got != c.content {
+			t.Fatalf("%q: expected content %q, got %q", c.input, c.content, got)
+		}
+	}
+}
+
+func TestRemPrefixIsStillTokenized(t *testing.T) {
+	tokens, err := NewScanner(`rem @idea #go #db the content`).ScanTokens()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expected := []TokenType{COMMAND, ETYPE, TAG, TAG, TEXT, EOF}
+
+	if len(tokens) != len(expected) {
+		t.Fatalf("expected %d tokens, got %d", len(expected), len(tokens))
+	}
+
+	for i, tType := range expected {
+		if tokens[i].TokenType != tType {
+			t.Fatalf("token %d: expected %v, got %v", i, tType, tokens[i].TokenType)
+		}
+	}
+}
+
+func TestRemWithoutContentHasNoTextToken(t *testing.T) {
+	for _, input := range []string{"rem", "rem ", "rem @idea", "rem @idea #go "} {
+		tokens, err := NewScanner(input).ScanTokens()
+		if err != nil {
+			t.Fatalf("%q: unexpected error %v", input, err)
+		}
+
+		for _, tok := range tokens {
+			if tok.TokenType == TEXT {
+				t.Fatalf("%q: expected no content token, got %q", input, tok.Lexeme)
+			}
+		}
+	}
+}
+
+func TestQueryCommandsStillValidateCharacters(t *testing.T) {
+	for _, input := range []string{`recall my e-mail`, `forget 50%`, `revise @note where x:y`} {
+		if _, err := NewScanner(input).ScanTokens(); err == nil {
+			t.Fatalf("%q: expected a scan error, query syntax should stay strict", input)
+		}
+	}
+}

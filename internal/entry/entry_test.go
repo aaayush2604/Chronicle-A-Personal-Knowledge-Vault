@@ -93,3 +93,38 @@ func TestCurrentVersionMatchesLatestVersion(t *testing.T) {
 		)
 	}
 }
+
+func TestTypeForAcceptsNamesAndAliases(t *testing.T) {
+	cases := map[string]EntryType{
+		"note": TypeNote, "n": TypeNote,
+		"idea": TypeIdea, "i": TypeIdea,
+		"question": TypeQuestion, "q": TypeQuestion,
+		"learning": TypeLearning, "l": TypeLearning,
+		"important": TypeImportant, "imp": TypeImportant,
+		"IMPORTANT": TypeImportant, "Imp": TypeImportant,
+	}
+
+	for name, want := range cases {
+		got, ok := TypeFor(name)
+		if !ok {
+			t.Fatalf("%q: expected a known type", name)
+		}
+		if got != want {
+			t.Fatalf("%q: expected %q, got %q", name, want, got)
+		}
+	}
+
+	if _, ok := TypeFor("todo"); ok {
+		t.Fatalf("expected todo to be unknown")
+	}
+}
+
+func TestCanonicalUpgradesStoredAliases(t *testing.T) {
+	if got := Canonical("imp"); got != TypeImportant {
+		t.Fatalf("expected a stored imp to read back as important, got %q", got)
+	}
+
+	if got := Canonical("todo"); got != EntryType("todo") {
+		t.Fatalf("expected an unknown stored type to be left alone, got %q", got)
+	}
+}

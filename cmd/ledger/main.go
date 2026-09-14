@@ -22,12 +22,12 @@ func main() {
 
 	dir := filepath.Dir(logPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		log.Fatal(err)
+		log.Fatalf("Cannot create the directory %s: %v", dir, err)
 	}
 
 	file, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Cannot write to the log file at %s: %v", logPath, err)
 	}
 	defer file.Close()
 

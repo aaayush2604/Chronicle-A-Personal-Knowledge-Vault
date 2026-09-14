@@ -57,6 +57,7 @@ func (r *REPL) handle(input string) bool {
 		results, err := r.engine.Query(input)
 		if err != nil {
 			fmt.Println(errorC.FormatError(err))
+			return false
 		}
 		printEntries(results)
 
@@ -71,6 +72,7 @@ func (r *REPL) handle(input string) bool {
 		res, err := r.engine.Query(input)
 		if err != nil {
 			fmt.Println(errorC.FormatError(err))
+			return false
 		}
 		printEntries(res)
 
@@ -85,54 +87,23 @@ func (r *REPL) handle(input string) bool {
 		deletionEntries, err := r.engine.Query(input)
 		if err != nil {
 			fmt.Println(errorC.FormatError(err))
+			return false
 		}
 
 		delete, toBeDeleted := r.confirmDeletion(deletionEntries)
 
 		if delete {
-			err = r.engine.ProcessDeletion(toBeDeleted, deletionEntries)
+			deletedCnt, err := r.engine.ProcessDeletion(toBeDeleted, deletionEntries)
 			if err != nil {
 				fmt.Println(errorC.FormatError(err))
+				return false
 			}
-
-			var deletedCount int
-			if len(toBeDeleted) > 0 {
-				deletedCount = len(toBeDeleted)
-			} else {
-				deletedCount = len(deletionEntries)
-			}
-			fmt.Printf("[%d] entries deleted\n", deletedCount)
+			fmt.Printf("[%d] entries deleted\n", deletedCnt)
 		} else {
 			fmt.Printf("Forget Cancelled\n")
 		}
 
 		return false
-	case "today":
-		results := r.engine.Today()
-		printEntries(results)
-		return false
-
-	case "month":
-		results := r.engine.ThisMonth()
-		printEntries(results)
-		return false
-
-	case "year":
-		results := r.engine.ThisYear()
-		printEntries(results)
-		return false
-
-	case "this", "week":
-		results := r.engine.ThisWeek()
-		printEntries(results)
-		return false
-
-	case "summary":
-		results := r.engine.ThisWeek()
-		summary := r.engine.SummaryByType(results)
-		printSummary(summary)
-		return false
-
 	case "version":
 		fmt.Println("Chronicle v" + r.version)
 		return false
@@ -173,6 +144,8 @@ func (r *REPL) confirmDeletion(entries []entry.KnowledgeEntry) (bool, []int) {
 			list = l
 			break
 		}
+
+		fmt.Println("Please answer y, n, or a comma separated list of ids like 1,3,5")
 	}
 
 	return response, list

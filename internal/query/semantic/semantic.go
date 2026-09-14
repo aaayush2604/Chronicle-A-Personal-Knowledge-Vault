@@ -123,6 +123,29 @@ func (s *ExprSemanticAnalyzer) VisitComparisonExpression(expr *parser.Comparison
 	if !isValidComparison(field, Value) {
 		return errorC.New(errorC.Validation, fmt.Sprintf("Invalid Comparison between %v and %v", field.Lexeme, Value.TokenType))
 	}
+	if err := validateLiteral(field, Value); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateLiteral(field *lexer.Token, Value *lexer.Token) error {
+	literal, ok := Value.Literal.(string)
+	if !ok {
+		return nil
+	}
+
+	var err error
+	switch field.Lexeme {
+	case "date":
+		_, _, err = util.ParseDate(literal)
+	case "time":
+		_, _, err = util.ParseTime(literal)
+	}
+
+	if err != nil {
+		return errorC.New(errorC.Validation, fmt.Sprintf("%s at col %v", err.Error(), Value.Position))
+	}
 	return nil
 }
 
@@ -162,6 +185,13 @@ func (s *ExprSemanticAnalyzer) VisitTagsExpression(expr *parser.Tags) any {
 	return nil
 }
 
+func (s *ExprSemanticAnalyzer) VisitIDsExpression(expr *parser.IDs) any {
+	if len(expr.List) == 0 {
+		return errorC.New(errorC.Validation, "Empty Id List Not Allowed")
+	}
+	return nil
+}
+
 func (s *ExprSemanticAnalyzer) VisitAllExpression(expr *parser.All) any {
 	return nil
 }
@@ -170,7 +200,7 @@ func (s *PayloadSemanticAnalyzer) VisitRemPayload(payload *parser.RemPayload) (a
 	if payload.Type == "" {
 		return errorC.New(errorC.Validation, "No Entry Type Specified"), nil, nil
 	}
-	if len(payload.Content) == 0 {
+	if payload.Content == "" {
 		return errorC.New(errorC.Validation, "No Content specified for the entry"), nil, nil
 	}
 	return nil, nil, nil

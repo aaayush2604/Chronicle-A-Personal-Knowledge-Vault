@@ -22,6 +22,7 @@ type ExprVisitor interface {
 	VisitGroupingExpression(*Grouping) any
 	VisitLiteralExpression(*Literal) any
 	VisitTagsExpression(*Tags) any
+	VisitIDsExpression(*IDs) any
 	VisitAllExpression(*All) any
 }
 
@@ -166,6 +167,22 @@ func (t *Tags) Accept(v ExprVisitor) any {
 	return v.VisitTagsExpression(t)
 }
 
+type IDs struct {
+	List []int
+}
+
+func NewIDs(ids []int) *IDs {
+	return &IDs{
+		List: ids,
+	}
+}
+
+func (i *IDs) exprNode() {}
+
+func (i *IDs) Accept(v ExprVisitor) any {
+	return v.VisitIDsExpression(i)
+}
+
 type All struct{}
 
 func (a *All) exprNode() {}
@@ -176,8 +193,8 @@ func (a *All) Accept(v ExprVisitor) any {
 
 type RemPayload struct {
 	Type    entry.EntryType
-	Tags    []*lexer.Token
-	Content []*lexer.Token
+	Tags    []string
+	Content string
 }
 
 func (n *RemPayload) payloadNode() {}

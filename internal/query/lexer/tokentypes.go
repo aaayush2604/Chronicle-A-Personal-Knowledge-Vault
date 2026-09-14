@@ -17,6 +17,7 @@ const (
 	RPAREN      TokenType = "right_parenthesis"
 	PUNCTUATION TokenType = "punctuation"
 	STRING      TokenType = "string"
+	TEXT        TokenType = "text"
 	NUMBER      TokenType = "number"
 	IDENTIFIER  TokenType = "identifier"
 	EOF         TokenType = "end_of_input"

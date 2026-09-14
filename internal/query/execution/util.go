@@ -2,9 +2,6 @@ package execution
 
 import (
 	"chronicle/internal/entry"
-	"chronicle/internal/query/lexer"
-
-	"strings"
 )
 
 func EntryToRecord(e entry.KnowledgeEntry) Record {
@@ -16,13 +13,4 @@ func EntryToRecord(e entry.KnowledgeEntry) Record {
 		"type":    string(e.Type),
 		"tags":    e.Tags,
 	}
-}
-
-func TokensToString(list []*lexer.Token) string {
-	var sb strings.Builder
-	for _, l := range list {
-		sb.WriteString(l.Lexeme)
-		sb.WriteString(" ")
-	}
-	return sb.String()
 }

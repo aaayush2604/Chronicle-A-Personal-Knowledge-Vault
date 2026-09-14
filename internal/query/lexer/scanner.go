@@ -27,11 +27,54 @@ func (s *Scanner) ScanTokens() ([]*Token, error) {
 		if err != nil {
 			return []*Token{}, err
 		}
+
+		if s.atEntryContent() {
+			s.addContent()
+			break
+		}
 	}
 
 	endToken := NewToken(EOF, "", nil, 0)
 	s.tokens = append(s.tokens, endToken)
 	return s.tokens, nil
+}
+
+func (s *Scanner) atEntryContent() bool {
+	if len(s.tokens) == 0 {
+		return false
+	}
+
+	first := s.tokens[0]
+	if first.TokenType != COMMAND || (first.Lexeme != "rem" && first.Lexeme != "remember") {
+		return false
+	}
+
+	switch s.tokens[len(s.tokens)-1].TokenType {
+	case COMMAND, ETYPE, TAG:
+	default:
+		return false
+	}
+
+	i := s.current
+	for i < len(s.source) && (s.source[i] == ' ' || s.source[i] == '\t') {
+		i++
+	}
+	if i >= len(s.source) {
+		return false
+	}
+
+	return s.source[i] != '@' && s.source[i] != '#'
+}
+
+func (s *Scanner) addContent() {
+	text := strings.TrimSpace(s.source[s.current:])
+	if text == "" {
+		s.current = len(s.source)
+		return
+	}
+
+	s.tokens = append(s.tokens, NewToken(TEXT, text, text, s.current))
+	s.current = len(s.source)
 }
 
 func (s *Scanner) isAtEnd() bool {
@@ -142,10 +185,10 @@ func (s *Scanner) addTag() error {
 	if s.peek() == '#' {
 		return errorC.New(errorC.Validation, fmt.Sprintf("Unexpected '#' at col %d", s.current))
 	}
-	for s.isAlphaNumeric(s.peek()) {
+	for s.isAlphaNumeric(s.peek()) || s.peek() == '-' {
 		s.advance()
 	}
-	tagText := strings.ToLower(s.source[s.start+1 : s.current])
+	tagText := strings.Trim(strings.ToLower(s.source[s.start+1:s.current]), "-")
 	s.addTokenLiteral(TAG, tagText)
 	return nil
 }

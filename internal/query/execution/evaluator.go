@@ -1,11 +1,11 @@
 package execution
 
 import (
+	"chronicle/internal/entry"
 	"chronicle/internal/query/lexer"
 	"chronicle/internal/query/parser"
 	"chronicle/internal/query/util"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -42,95 +42,140 @@ func (e *AstEvaluator) VisitLogicalExpression(expr *parser.Logical) any {
 }
 
 func (e *AstEvaluator) VisitComparisonExpression(expr *parser.Comparison) any {
-	inputField := expr.Field.Lexeme
-	field := inputField
+	field := expr.Field.Lexeme
+	op := expr.Operator.Lexeme
 
-	if inputField == "time" {
-		field = "date"
+	if field == "len" {
+		recordVal, ok := e.record["len"].(int)
+		if !ok {
+			return false
+		}
+		queryVal, ok := toFloat(expr.Value.Accept(e))
+		if !ok {
+			return false
+		}
+		return compareNumber(op, float64(recordVal), queryVal)
 	}
 
-	recordVal := e.record[field]
-	queryVal := expr.Value.Accept(e)
+	t, ok := e.record["date"].(time.Time)
+	if !ok {
+		return false
+	}
 
-	switch inputField {
+	value, ok := expr.Value.Accept(e).(string)
+	if !ok {
+		return false
+	}
+
+	var start, end, recordVal int
+	var err error
+
+	switch field {
 	case "date":
-		adjustDate(&recordVal, &queryVal)
+		start, end, err = util.ParseDate(value)
+		recordVal = util.RecordDate(t)
 	case "time":
-		adjustTime(&recordVal, &queryVal)
+		start, end, err = util.ParseTime(value)
+		recordVal = util.RecordTime(t)
+	default:
+		return false
 	}
 
-	switch expr.Operator.Lexeme {
-	case "<":
-		return recordVal.(int) < queryVal.(int)
-	case ">":
-		return recordVal.(int) > queryVal.(int)
+	if err != nil {
+		return false
+	}
+
+	return compareRange(op, recordVal, start, end)
+}
+
+func toFloat(v any) (float64, bool) {
+	switch n := v.(type) {
+	case float64:
+		return n, true
+	case int:
+		return float64(n), true
+	}
+	return 0, false
+}
+
+func compareNumber(op string, recordVal, queryVal float64) bool {
+	switch op {
 	case "=":
-		return recordVal.(int) == queryVal.(int)
-	case ">=":
-		return recordVal.(int) >= queryVal.(int)
-	case "<=":
-		return recordVal.(int) <= queryVal.(int)
+		return recordVal == queryVal
 	case "!=":
-		return recordVal.(int) != queryVal.(int)
+		return recordVal != queryVal
+	case ">":
+		return recordVal > queryVal
+	case ">=":
+		return recordVal >= queryVal
+	case "<":
+		return recordVal < queryVal
+	case "<=":
+		return recordVal <= queryVal
 	}
+	return false
+}
 
+func compareRange(op string, recordVal, start, end int) bool {
+	switch op {
+	case "=":
+		return recordVal >= start && recordVal <= end
+	case "!=":
+		return recordVal < start || recordVal > end
+	case ">":
+		return recordVal > start
+	case ">=":
+		return recordVal >= start
+	case "<":
+		return recordVal < start
+	case "<=":
+		return recordVal <= end
+	}
 	return false
 }
 
 func (e *AstEvaluator) VisitGroupingExpression(expr *parser.Grouping) any {
-	return expr.Accept(e).(bool)
+	return expr.Expression.Accept(e).(bool)
 }
 
 func (e *AstEvaluator) VisitContainsExpression(expr *parser.Contains) any {
-	content := e.record["content"].(string)
-	flag := false
+	content, ok := e.record["content"].(string)
+	if !ok {
+		return false
+	}
 
 	words := util.Tokenize(content)
 	for _, w := range expr.Words {
 		for _, l := range words {
 			if l == strings.ToLower(w) {
-				flag = true
-				break
+				return true
 			}
 		}
-		if !flag {
-			return false
-		}
-		flag = false
 	}
 
-	return true
+	return false
 }
 
 func (e *AstEvaluator) VisitTypeFilterExpression(expr *parser.TypeFilter) any {
-	tVal := e.record["type"].(string)
+	tVal, ok := e.record["type"].(string)
+	if !ok {
+		return false
+	}
 
-	for i, t := range expr.Words {
-		switch t {
-		case "n":
-			expr.Words[i] = "note"
-		case "q":
-			expr.Words[i] = "question"
-		case "l":
-			expr.Words[i] = "learning"
-		case "i":
-			expr.Words[i] = "idea"
-		case "imp":
-			expr.Words[i] = "important"
+	for _, w := range expr.Words {
+		if t, ok := entry.TypeFor(w); ok && string(t) == tVal {
+			return true
 		}
 	}
 
-	return slices.Contains(expr.Words, tVal)
+	return false
 }
 
 func (e *AstEvaluator) VisitLiteralExpression(expr *parser.Literal) any {
 	t := expr.Val
 
 	switch t.TokenType {
-	case lexer.NUMBER:
-		val, _ := strconv.Atoi(t.Lexeme)
-		return val
-	case lexer.STRING:
+	case lexer.NUMBER, lexer.STRING:
 		return t.Literal
 	}
 	return nil
@@ -149,98 +194,17 @@ func (e *AstEvaluator) VisitTagsExpression(expr *parser.Tags) any {
 	return false
 }
 
+func (e *AstEvaluator) VisitIDsExpression(expr *parser.IDs) any {
+	id, ok := e.record["id"].(int)
+	if !ok {
+		return false
+	}
+
+	return slices.Contains(expr.List, id)
+}
+
 func (e *AstEvaluator) VisitAllExpression(expr *parser.All) any {
 	return true
-}
-
-func adjustDate(rVal *any, qVal *any) {
-	t := (*rVal).(time.Time)
-	q := (*qVal).(string)
-
-	q = strings.ReplaceAll(q, "/", "-")
-
-	parts := strings.Split(q, "-")
-
-	var rInt, qInt int
-
-	switch len(parts) {
-	case 1:
-		year, _ := strconv.Atoi(parts[0])
-		qInt = year
-		rInt = t.Year()
-
-	case 2:
-		month, _ := strconv.Atoi(parts[0])
-		year, _ := strconv.Atoi(parts[1])
-
-		qInt = year*100 + month
-		rInt = t.Year()*100 + int(t.Month())
-
-	case 3:
-		day, _ := strconv.Atoi(parts[0])
-		month, _ := strconv.Atoi(parts[1])
-		year, _ := strconv.Atoi(parts[2])
-
-		qInt = year*10000 + month*100 + day
-		rInt = t.Year()*10000 + int(t.Month())*100 + t.Day()
-	}
-
-	*rVal = rInt
-	*qVal = qInt
-}
-
-func adjustTime(rVal *any, qVal *any) {
-	t := (*rVal).(time.Time)
-	q := (*qVal).(string)
-
-	q = strings.ToLower(strings.TrimSpace(q))
-
-	isPM := strings.Contains(q, "pm")
-	isAM := strings.Contains(q, "am")
-
-	q = strings.ReplaceAll(q, "am", "")
-	q = strings.ReplaceAll(q, "pm", "")
-	q = strings.TrimSpace(q)
-
-	parts := strings.Split(q, ":")
-
-	var hour, min, sec int
-
-	if len(parts) >= 1 {
-		hour, _ = strconv.Atoi(parts[0])
-	}
-	if len(parts) >= 2 {
-		min, _ = strconv.Atoi(parts[1])
-	}
-	if len(parts) >= 3 {
-		sec, _ = strconv.Atoi(parts[2])
-	}
-
-	if isPM && hour != 12 {
-		hour += 12
-	}
-	if isAM && hour == 12 {
-		hour = 0
-	}
-
-	var rInt, qInt int
-
-	switch len(parts) {
-	case 1:
-		qInt = hour
-		rInt = t.Hour()
-
-	case 2:
-		qInt = hour*100 + min
-		rInt = t.Hour()*100 + t.Minute()
-
-	case 3:
-		qInt = hour*10000 + min*100 + sec
-		rInt = t.Hour()*10000 + t.Minute()*100 + t.Second()
-	}
-
-	*rVal = rInt
-	*qVal = qInt
 }
 
 type PayloadEvaluator struct{}

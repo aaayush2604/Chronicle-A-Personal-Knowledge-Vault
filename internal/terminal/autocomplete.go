@@ -1,18 +1,19 @@
 package terminal
 
 import (
+	"chronicle/internal/entry"
 	"chronicle/internal/query/lexer"
 	"strings"
 )
 
-type CompletionContext string
+type CommandContext string
 
 const (
-	RecallContext CompletionContext = "recall"
-	RemContext    CompletionContext = "remember"
-	TypeContext   CompletionContext = "type"
-	TagContext    CompletionContext = "tag"
-	NullContext   CompletionContext = "null"
+	NoCommand     CommandContext = ""
+	RecallContext CommandContext = "recall"
+	RemContext    CommandContext = "remember"
+	ForgetContext CommandContext = "forget"
+	ReviseContext CommandContext = "revise"
 )
 
 type ChronicleCompleter struct {
@@ -22,79 +23,170 @@ func NewCompleter() *ChronicleCompleter {
 	return &ChronicleCompleter{}
 }
 
-var isCompletedWord = map[string]struct{}{
-	"recall":   {},
-	"rem":      {},
-	"remember": {},
-	"[":        {},
-	"]":        {},
-	"(":        {},
-	")":        {},
-	"@":        {},
-	"#":        {},
-	"and":      {},
-	"or":       {},
+var commandNames = []string{
+	"recall", "remember", "rem", "revise", "forget",
+	"today", "week", "month", "year", "summary",
+	"help", "index", "version", "clear", "exit", "quit",
 }
 
-func isACompletedToken(s string) bool {
-	_, ok := isCompletedWord[s]
-	return ok
+var predicates = []string{
+	"all", "contains[", "type[", "tags[", "id[", "time", "date", "len",
 }
 
-func determineCompletionContext(tokens []*lexer.Token) (CompletionContext, CompletionContext) {
-	var commandContext CompletionContext = NullContext
-	var context CompletionContext = NullContext
+var connectors = []string{"AND", "OR"}
 
-	for _, token := range tokens {
-		if token.Lexeme == "recall" {
-			commandContext = RecallContext
-			context = NullContext
-		} else if token.Lexeme == "rem" || token.Lexeme == "remember" {
-			commandContext = RemContext
-			context = NullContext
-		} else if token.Lexeme == "type" || strings.HasPrefix(token.Lexeme, "@") {
-			context = TypeContext
-		} else if token.Lexeme == "tag" || strings.HasPrefix(token.Lexeme, "#") {
-			context = TagContext
-		} else if token.Lexeme == "and" || token.Lexeme == "or" || token.Lexeme == "(" {
-			context = NullContext
+func typeCandidates(prefix string) []string {
+	types := entry.AllTypes()
+	out := make([]string, 0, len(types))
+	for _, t := range types {
+		out = append(out, prefix+string(t))
+	}
+	return out
+}
+
+type clause struct {
+	command    CommandContext
+	afterWhere bool
+	listOwner  string
+	hasType    bool
+	inContent  bool
+	prev       *lexer.Token
+}
+
+func isBoundary(r rune) bool {
+	switch r {
+	case ' ', '\t', '[', ']', '(', ')', ',', '"':
+		return true
+	}
+	return false
+}
+
+func currentWord(line []rune) string {
+	i := len(line)
+	for i > 0 && !isBoundary(line[i-1]) {
+		i--
+	}
+	return string(line[i:])
+}
+
+func readClause(tokens []*lexer.Token, word string) clause {
+	if n := len(tokens); n > 0 && tokens[n-1].TokenType == lexer.EOF {
+		tokens = tokens[:n-1]
+	}
+
+	if word != "" && len(tokens) > 0 {
+		tokens = tokens[:len(tokens)-1]
+	}
+
+	c := clause{command: NoCommand}
+	for _, t := range tokens {
+		switch t.TokenType {
+		case lexer.ETYPE:
+			c.hasType = true
+		case lexer.TEXT:
+			c.inContent = true
 		}
 	}
 
-	return commandContext, context
-}
+	var lastIdentifier string
 
-func getCompletionCandidates(commandContext CompletionContext, context CompletionContext) []string {
-	if commandContext == RecallContext {
-		switch context {
-		case NullContext:
-			return []string{"all", "contains[", "type[", "tags[", "time", "date", "len"}
-		case TypeContext:
-			return []string{"note", "learning", "question", "important", "idea"}
-		case TagContext:
-			return []string{}
+	for _, t := range tokens {
+		switch t.TokenType {
+		case lexer.LBRACKET:
+			c.listOwner = lastIdentifier
+		case lexer.RBRACKET:
+			c.listOwner = ""
+		case lexer.IDENTIFIER:
+			lastIdentifier = t.Lexeme
 		}
-	} else if commandContext == RemContext {
-		switch context {
-		case NullContext:
-			return []string{}
-		case TypeContext:
-			return []string{"@note", "@learning", "@question", "@important", "@idea"}
-		case TagContext:
-			return []string{}
+
+		if t.TokenType != lexer.COMMAND {
+			continue
+		}
+
+		switch t.Lexeme {
+		case "recall":
+			c.command = RecallContext
+		case "rem", "remember":
+			c.command = RemContext
+		case "forget":
+			c.command = ForgetContext
+		case "revise":
+			c.command = ReviseContext
+		case "where":
+			c.afterWhere = true
 		}
 	}
-	return []string{}
+
+	if n := len(tokens); n > 0 {
+		c.prev = tokens[n-1]
+	}
+	return c
 }
 
-func filterCandidates(list []string, prefix string) []string {
+func endsPredicate(t *lexer.Token) bool {
+	if t == nil {
+		return false
+	}
+	switch t.TokenType {
+	case lexer.RBRACKET, lexer.RPAREN, lexer.NUMBER, lexer.STRING, lexer.ALL:
+		return true
+	}
+	return false
+}
+
+func predicateCandidates(c clause) []string {
+	if endsPredicate(c.prev) {
+		return connectors
+	}
+	return predicates
+}
+
+func candidatesFor(c clause) []string {
+	if c.listOwner != "" {
+		switch c.listOwner {
+		case "type":
+			return typeCandidates("")
+		}
+		return nil
+	}
+
+	switch c.command {
+	case NoCommand:
+		return commandNames
+
+	case RecallContext, ForgetContext:
+		return predicateCandidates(c)
+
+	case RemContext:
+		if c.inContent || c.hasType {
+			return nil
+		}
+		if c.prev != nil && (c.prev.TokenType == lexer.COMMAND || c.prev.TokenType == lexer.TAG) {
+			return typeCandidates("@")
+		}
+		return nil
+
+	case ReviseContext:
+		if c.afterWhere {
+			return predicateCandidates(c)
+		}
+		if c.prev != nil && c.prev.TokenType == lexer.COMMAND {
+			return typeCandidates("@")
+		}
+		return []string{"where"}
+	}
+
+	return nil
+}
+
+func filterCandidates(list []string, word string) []string {
 	var res []string
 	for _, l := range list {
-		if strings.HasPrefix(l, prefix) {
-			res = append(res, strings.TrimPrefix(l, prefix))
+		if l != word && strings.HasPrefix(l, word) {
+			res = append(res, strings.TrimPrefix(l, word))
 		}
 	}
-
 	return res
 }
 
@@ -109,32 +201,21 @@ func toRunes(candidates []string) [][]rune {
 }
 
 func (c *ChronicleCompleter) Do(line []rune, pos int) ([][]rune, int) {
-	input := string(line[:pos])
-	var prefix string
-
-	if input == "" {
-		return [][]rune{}, 0
+	if pos < 0 {
+		pos = 0
 	}
+	if pos > len(line) {
+		pos = len(line)
+	}
+	head := line[:pos]
 
-	scanner := lexer.NewScanner(input)
-	tokens, err := scanner.ScanTokens()
+	tokens, err := lexer.NewScanner(string(head)).ScanTokens()
 	if err != nil {
 		return [][]rune{}, 0
 	}
 
-	commandContext, context := determineCompletionContext(tokens)
+	word := currentWord(head)
+	candidates := filterCandidates(candidatesFor(readClause(tokens, word)), word)
 
-	initialCandidates := getCompletionCandidates(commandContext, context)
-
-	lastToken := tokens[len(tokens)-2]
-	endsWithSpace := len(input) > 0 && input[len(input)-1] == ' '
-	if endsWithSpace || isACompletedToken(lastToken.Lexeme) {
-		prefix = ""
-	} else {
-		prefix = lastToken.Lexeme
-	}
-
-	candidates := filterCandidates(initialCandidates, prefix)
-
-	return toRunes(candidates), len(prefix)
+	return toRunes(candidates), len([]rune(word))
 }

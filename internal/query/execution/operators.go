@@ -198,7 +198,7 @@ func (this *Remember) Next(context *ExecContext) (entry.KnowledgeEntry, bool, er
 func (this *Remember) Write(context *ExecContext) (entry.KnowledgeEntry, error) {
 	eType, tags, content := EvaluatePayload(this.payload)
 
-	e, err := context.Store.Add(TokensToString(content.([]*lexer.Token)), tags.([]*lexer.Token), eType.(entry.EntryType))
+	e, err := context.Store.Add(content.(string), tags.([]string), eType.(entry.EntryType))
 	if err != nil {
 		return entry.KnowledgeEntry{}, errorC.Wrap(err, errorC.Execution, "Error in Adding Entry to Store")
 	}
@@ -332,7 +332,11 @@ func (this *Revise) Update(context *ExecContext) ([]entry.KnowledgeEntry, error)
 			return res, nil
 		}
 
-		e, err = context.Store.AddUpdate(e.ID, e.Content, e.Tags, tags.([]*lexer.Token), eType.(entry.EntryType))
+		e, err = context.Store.AddUpdate(e, tags.([]*lexer.Token), eType.(entry.EntryType))
+		if err != nil {
+			return []entry.KnowledgeEntry{}, errorC.Wrap(err, errorC.Execution, "Error in Updating Entry:")
+		}
+
 		res = append(res, e)
 	}
 }

@@ -84,6 +84,20 @@ func (p *ASTPrinter) VisitTagsExpression(expr *parser.Tags) any {
 	return builder.String()
 }
 
+func (p *ASTPrinter) VisitIDsExpression(expr *parser.IDs) any {
+	var builder strings.Builder
+
+	builder.WriteString("( id [")
+	for i, id := range expr.List {
+		builder.WriteString(fmt.Sprintf("%d", id))
+		if i < len(expr.List)-1 {
+			builder.WriteString(", ")
+		}
+	}
+	builder.WriteString("])")
+	return builder.String()
+}
+
 func (p *ASTPrinter) VisitAllExpression(expr *parser.All) any {
 	return "ALL"
 }

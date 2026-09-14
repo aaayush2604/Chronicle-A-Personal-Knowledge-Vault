@@ -3,6 +3,7 @@ package store
 import (
 	"chronicle/internal/entry"
 	"chronicle/internal/query/lexer"
+	"slices"
 	"sync"
 	"time"
 )
@@ -33,13 +34,15 @@ func New(logPath string) (*Store, error) {
 	return s, nil
 }
 
-func (s *Store) Add(content string, tags []*lexer.Token, t entry.EntryType) (entry.KnowledgeEntry, error) {
+func (s *Store) Add(content string, tags []string, t entry.EntryType) (entry.KnowledgeEntry, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	var Tags []string
-	for _, l := range tags {
-		Tags = append(Tags, l.Literal.(string))
+	for _, tag := range tags {
+		if !slices.Contains(Tags, tag) {
+			Tags = append(Tags, tag)
+		}
 	}
 	e := entry.New(s.nextID, content, Tags)
 	e.Type = t
@@ -53,22 +56,38 @@ func (s *Store) Add(content string, tags []*lexer.Token, t entry.EntryType) (ent
 	return e, nil
 }
 
-func (s *Store) AddUpdate(id int, content string, Tags []string, tags []*lexer.Token, t entry.EntryType) (entry.KnowledgeEntry, error) {
+func (s *Store) AddUpdate(original entry.KnowledgeEntry, tags []*lexer.Token, t entry.EntryType) (entry.KnowledgeEntry, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	for _, l := range tags {
-		Tags = append(Tags, l.Literal.(string))
-	}
-	e := entry.New(id, content, Tags)
-	e.Type = t
+	updated := original
+	updated.Version = entry.CurrentVersion
+	updated.Timestamp = time.Now()
 
-	if err := s.append(e); err != nil {
+	merged := make([]string, 0, len(original.Tags)+len(tags))
+	for _, tag := range original.Tags {
+		if !slices.Contains(merged, tag) {
+			merged = append(merged, tag)
+		}
+	}
+	for _, l := range tags {
+		tag := l.Literal.(string)
+		if !slices.Contains(merged, tag) {
+			merged = append(merged, tag)
+		}
+	}
+	updated.Tags = merged
+
+	if t != "" {
+		updated.Type = t
+	}
+
+	if err := s.append(updated); err != nil {
 		return entry.KnowledgeEntry{}, err
 	}
 
-	update(s.entries, e)
-	return e, nil
+	update(s.entries, updated)
+	return updated, nil
 }
 
 func (s *Store) List() []entry.KnowledgeEntry {

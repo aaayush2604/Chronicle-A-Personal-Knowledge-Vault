@@ -32,8 +32,6 @@ func (r *REPL) Start() {
 		printBanner(r.version)
 	}
 
-	pageSize = r.config.PageSize
-
 	fmt.Println("Chronicle -- Personal Knowledge Vault")
 	fmt.Println("Type `help` to see available commands")
 	fmt.Println()

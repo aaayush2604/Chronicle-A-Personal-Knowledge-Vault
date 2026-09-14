@@ -5,10 +5,6 @@ import "testing"
 func TestDefaultConfig(t *testing.T) {
 	cfg := DefaultConfig()
 
-	if cfg.PageSize != 10 {
-		t.Fatalf("expected PageSize 10, got %d", cfg.PageSize)
-	}
-
 	if !cfg.ShowBanner {
 		t.Fatalf("expected ShowBanner=true")
 	}

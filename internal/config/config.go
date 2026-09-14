@@ -11,14 +11,12 @@ import (
 )
 
 type Config struct {
-	PageSize   int      `json:"page_size"`
 	ShowBanner bool     `json:"show_banner"`
 	Paths      []string `json:"paths"`
 }
 
 func DefaultConfig() Config {
 	return Config{
-		PageSize:   10,
 		ShowBanner: true,
 		Paths:      []string{},
 	}
@@ -171,7 +169,10 @@ func SelectLogPath() (string, error) {
 
 	choice, err := strconv.Atoi(input)
 	if err != nil {
-		return "", fmt.Errorf("invalid input")
+		if input == "" {
+			return "", fmt.Errorf("no choice entered, expected a number between 1 and %d", len(finalPaths)+1)
+		}
+		return "", fmt.Errorf("%q is not a number, expected a number between 1 and %d", input, len(finalPaths)+1)
 	}
 
 	// 🔥 New path
@@ -218,7 +219,7 @@ func SelectLogPath() (string, error) {
 		return selected, nil
 	}
 
-	return "", fmt.Errorf("invalid choice")
+	return "", fmt.Errorf("%d is not one of the listed choices, expected a number between 1 and %d", choice, len(finalPaths)+1)
 }
 
 func DefaultLogPath() (string, error) {
